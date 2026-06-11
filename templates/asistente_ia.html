@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente IA Camélidos - Yamitas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            margin-bottom: 15px;
+        }
+
+        .chat-message {
+            margin-bottom: 12px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-message.user {
+            justify-content: flex-end;
+        }
+
+        .message-text {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 12px;
+        }
+
+        .chat-message.user .message-text {
+            background-color: #8B6F47;
+            color: white;
+        }
+
+        .chat-message.bot .message-text {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+<header class="navbar-custom">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center py-3">
+            <div class="d-flex align-items-center">
+                <a href="{{ url_for('index') }}" class="text-decoration-none d-flex align-items-center">
+                    <i class="fas fa-arrow-left text-dark me-2"></i>
+                    <h1 class="h4 mb-0">Asistente IA Camélidos</h1>
+                </a>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-link btn-icon btn-zoom-minus" title="Achicar">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button class="btn btn-link btn-icon btn-zoom-plus" title="Agrandar">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">Volver al Inicio</a>
+        </div>
+    </div>
+</header>
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="chat-container" id="chatContainer">
+                <div class="chat-message bot">
+                    <div class="message-text">
+                        <strong>Asistente IA:</strong> ¡Hola! Soy tu asistente especializado en camélidos. ¿Cómo puedo ayudarte hoy?
+                    </div>
+                </div>
+            </div>
+
+            <form id="chatForm" class="d-flex gap-2">
+                <input type="text" class="form-control" id="messageInput" placeholder="Haz una pregunta sobre camélidos..." required>
+                <button type="submit" class="btn btn-dark">
+                    <i class="fas fa-send"></i>
+                </button>
+            </form>
+
+            <div class="mt-4">
+                <h6 class="text-muted mb-3">Preguntas sugeridas:</h6>
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="askQuestion('¿Cuál es la mejor alimentación para alpacas?')">Alimentación de alpacas</button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="askQuestion('¿A qué edad puedo empezar la reproducción?')">Edad de reproducción</button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="askQuestion('¿Cómo prevenir enfermedades en camélidos?')">Prevención de enfermedades</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="container">
+        <div class="footer-nav">
+            <a href="{{ url_for('index') }}" class="footer-nav-item">
+                <i class="fas fa-home"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="{{ url_for('ferias') }}" class="footer-nav-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Ferias</span>
+            </a>
+            <a href="{{ url_for('publicar') }}" class="footer-nav-item">
+                <i class="fas fa-plus-circle"></i>
+                <span>Publicar</span>
+            </a>
+            <a href="{{ url_for('perfil') }}" class="footer-nav-item">
+                <i class="fas fa-user"></i>
+                <span>Perfil</span>
+            </a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    document.getElementById('chatForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const messageInput = document.getElementById('messageInput');
+        const message = messageInput.value;
+
+        if (message.trim()) {
+            addMessage(message, 'user');
+            messageInput.value = '';
+
+            // Simulación de respuesta del asistente
+            setTimeout(() => {
+                const responses = [
+                    'Excelente pregunta. Te recomiendo consultar con especialistas en crianza de camélidos.',
+                    'Esa es una pregunta muy importante para la crianza. La respuesta depende de varias variables.',
+                    'Muy buena observación. Este es un tema clave en la ganadería de camélidos.'
+                ];
+                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                addMessage(randomResponse, 'bot');
+            }, 500);
+        }
+    });
+
+    function addMessage(text, sender) {
+        const chatContainer = document.getElementById('chatContainer');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${sender}`;
+        messageDiv.innerHTML = `<div class="message-text">${text}</div>`;
+        chatContainer.appendChild(messageDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function askQuestion(question) {
+        document.getElementById('messageInput').value = question;
+        document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Funcionalidad de Zoom
+    const ZOOM_STEP = 0.1;
+    const MIN_ZOOM = 0.8;
+    const MAX_ZOOM = 2;
+
+    function initZoom() {
+        let currentZoom = parseFloat(localStorage.getItem('pageZoom')) || 1;
+        applyZoom(currentZoom);
+    }
+
+    function applyZoom(zoomLevel) {
+        zoomLevel = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomLevel));
+        document.body.style.zoom = zoomLevel;
+        localStorage.setItem('pageZoom', zoomLevel);
+    }
+
+    function zoomIn() {
+        let currentZoom = parseFloat(document.body.style.zoom) || 1;
+        applyZoom(currentZoom + ZOOM_STEP);
+    }
+
+    function zoomOut() {
+        let currentZoom = parseFloat(document.body.style.zoom) || 1;
+        applyZoom(currentZoom - ZOOM_STEP);
+    }
+
+    document.querySelectorAll('.btn-zoom-plus').forEach(btn => {
+        btn.addEventListener('click', zoomIn);
+    });
+
+    document.querySelectorAll('.btn-zoom-minus').forEach(btn => {
+        btn.addEventListener('click', zoomOut);
+    });
+
+    window.addEventListener('load', initZoom);
+    initZoom();
+</script>
+</body>
+</html>

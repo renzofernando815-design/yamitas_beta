@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil - Yamitas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            padding-bottom: 100px;
+        }
+        
+        #mapa {
+            height: 400px;
+            border-radius: 8px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: crosshair;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .leaflet-container {
+            border-radius: 8px;
+        }
+        
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<header class="navbar-custom">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center py-3">
+            <div class="d-flex align-items-center">
+                <a href="{{ url_for('index') }}" class="text-decoration-none d-flex align-items-center">
+                    <i class="fas fa-arrow-left text-dark me-2"></i>
+                    <h1 class="h4 mb-0">Mi Perfil</h1>
+                </a>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-link btn-icon btn-zoom-minus" title="Achicar">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button class="btn btn-link btn-icon btn-zoom-plus" title="Agrandar">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">Volver al Inicio</a>
+        </div>
+    </div>
+</header>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-5">
+                    <h2 class="text-center mb-4 fw-bold">Perfil de Usuario</h2>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <ul class="list-group list-group-flush mb-4">
+                        <li class="list-group-item"><strong>Usuario:</strong> {{ current_user.username }}</li>
+                        <li class="list-group-item"><strong>Email:</strong> {{ current_user.email }}</li>
+                        <li class="list-group-item"><strong>Registrado el:</strong> {{ current_user.fecha_registro.strftime('%d/%m/%Y') }}</li>
+                    </ul>
+
+                    <hr>
+
+                    <h5 class="mb-3">Lugar de Producción</h5>
+                    {% if current_user.ubicacion %}
+                        <p class="alert alert-info mb-3">
+                            <i class="fas fa-map-marker-alt"></i> {{ current_user.ubicacion }}
+                        </p>
+                    {% else %}
+                        <p class="text-muted mb-3">Aún no has agregado tu lugar de producción.</p>
+                    {% endif %}
+
+                    <form method="POST" action="{{ url_for('editar_ubicacion') }}">
+                        <div class="mb-3">
+                            <label for="ubicacion" class="form-label">Actualizar ubicación</label>
+                            <input type="text" class="form-control" id="ubicacion" name="ubicacion" placeholder="Ej: La Paz, Bolivia" value="{{ current_user.ubicacion|default('') }}">
+                        </div>
+
+                        <div class="d-grid gap-2 mb-3">
+                            <button type="submit" class="btn btn-primary">Guardar ubicación</button>
+                            <button type="button" class="btn btn-secondary" id="btn-ubicacion">Usar mi ubicación actual</button>
+                        </div>
+
+                        <!-- Mapa interactivo -->
+                        <div class="mb-3">
+                            <label class="form-label">Seleccionar ubicación en mapa</label>
+                            <p class="text-muted small">Haz clic en el mapa para seleccionar tu ubicación</p>
+                            <div id="mapa" data-ubicacion="{{ current_user.ubicacion|default('') }}"></div>
+                        </div>
+                    </form>
+
+                    <div class="d-grid gap-3">
+                        <a href="{{ url_for('logout') }}" class="btn btn-danger">Cerrar sesión</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="container">
+        <div class="footer-nav">
+            <a href="{{ url_for('index') }}" class="footer-nav-item">
+                <i class="fas fa-home"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="{{ url_for('ferias') }}" class="footer-nav-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Ferias</span>
+            </a>
+            <a href="{{ url_for('publicar') }}" class="footer-nav-item">
+                <i class="fas fa-plus-circle"></i>
+                <span>Publicar</span>
+            </a>
+            <a href="{{ url_for('perfil') }}" class="footer-nav-item active">
+                <i class="fas fa-user"></i>
+                <span>Perfil</span>
+            </a>
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+    let mapa = null;
+    let marcador = null;
+
+    // Inicializar mapa cuando el documento esté listo
+    function inicializarMapa() {
+        if (document.getElementById('mapa')) {
+            // Centrar en Bolivia por defecto
+            mapa = L.map('mapa').setView([-16.5, -68.15], 5);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(mapa);
+
+            // Evento de clic en el mapa
+            mapa.on('click', async function(e) {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+
+                // Eliminar marcador anterior si existe
+                if (marcador) {
+                    mapa.removeLayer(marcador);
+                }
+
+                // Agregar nuevo marcador
+                marcador = L.marker([lat, lng]).addTo(mapa)
+                    .bindPopup(`<strong>Ubicación seleccionada</strong><br>${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+                    .openPopup();
+
+                // Obtener localidad cercana
+                const resultado = await obtenerLocalidadCercana(lat, lng);
+
+                // Actualizar campo de entrada con la localidad propuesta y distancia
+                document.getElementById('ubicacion').value = construirTextoUbicacion(resultado);
+
+                // Mostrar información de ubicación
+                mostrarInfoUbicacion(resultado);
+            });
+
+            // Si el usuario está en una ubicación guardada, centrar el mapa allí
+            const ubicacionActual = document.getElementById('mapa').getAttribute('data-ubicacion') || '';
+            if (ubicacionActual && ubicacionActual.length > 0) {
+                // Buscar coordenadas de la ubicación guardada
+                fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(ubicacionActual)}&format=json&limit=1`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            const lat = parseFloat(data[0].lat);
+                            const lng = parseFloat(data[0].lon);
+                            mapa.setView([lat, lng], 10);
+                            marcador = L.marker([lat, lng]).addTo(mapa)
+                                .bindPopup(`<strong>${ubicacionActual}</strong>`)
+                                .openPopup();
+                        }
+                    })
+                    .catch(err => console.error('Error al cargar ubicación guardada:', err));
+            }
+        }
+    }
+
+    // Función para construir el texto de ubicación con distancia
+    function construirTextoUbicacion(resultado) {
+        let texto = resultado.nombre || 'Ubicación desconocida';
+        
+        // Si hay distancia y no es cero, agregarla al texto
+        if (resultado.distancia && resultado.distancia > 0) {
+            const distanciaText = resultado.distancia < 1
+                ? `${(resultado.distancia * 1000).toFixed(0)} m`
+                : `${resultado.distancia.toFixed(2)} km`;
+            texto += ` — ${distanciaText}`;
+        }
+        
+        return texto;
+    }
+
+    function mostrarInfoUbicacion(resultado) {
+        let info = document.getElementById('ubicacion-info');
+        if (!info) {
+            info = document.createElement('div');
+            info.id = 'ubicacion-info';
+            info.className = 'mt-2';
+            document.querySelector('form').appendChild(info);
+        }
+
+        let html = '';
+        if (resultado.tipo === 'ruta') {
+            html += `<div class="alert alert-warning">`;
+            html += `<strong>Ruta aproximada:</strong> ${resultado.nombre}`;
+        } else if (resultado.tipo === 'localidad') {
+            html += `<div class="alert alert-info">`;
+            html += `<strong>Localidad:</strong> ${resultado.nombre}`;
+        } else if (resultado.tipo === 'regional') {
+            html += `<div class="alert alert-secondary">`;
+            html += `<strong>Área:</strong> ${resultado.nombre}`;
+        } else {
+            html += `<div class="alert alert-light">`;
+            html += `<strong>Referencia:</strong> ${resultado.nombre}`;
+        }
+
+        if (resultado.distancia && resultado.distancia > 0) {
+            const distanciaText = resultado.distancia < 1
+                ? `${(resultado.distancia * 1000).toFixed(0)} m`
+                : `${resultado.distancia.toFixed(2)} km`;
+            html += ` — <strong>Distancia:</strong> ${distanciaText}`;
+        }
+
+        if (resultado.referencia) {
+            html += `<br><small class="text-muted">Referencia en: ${resultado.referencia.lat.toFixed(5)}, ${resultado.referencia.lon.toFixed(5)}</small>`;
+        }
+
+        html += `<button type="button" class="btn-close float-end close-btn" aria-label="Cerrar"></button></div>`;
+        info.innerHTML = html;
+        
+        // Agregar event listener al botón de cerrar
+        const closeBtn = info.querySelector('.close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function() {
+                info.remove();
+            });
+        }
+    }
+
+    // Función para calcular distancia entre dos puntos (Haversine)
+    function calcularDistancia(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Radio de la Tierra en km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    // Función para obtener localidades cercanas o la vía (ruta) más próxima y calcular distancia
+    async function obtenerLocalidadCercana(lat, lng) {
+        try {
+            // Obtener la dirección por coordenadas
+            const respuestaDir = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&zoom=18`);
+            const datosDireccion = await respuestaDir.json();
+            const direccion = datosDireccion.address || {};
+
+            // Preparar bbox para búsqueda local (~5km)
+            const delta = 0.05;
+            const bbox = `${lat - delta},${lng - delta},${lat + delta},${lng + delta}`;
+
+            // Consulta Overpass para lugares (ciudad/pueblo/aldea)
+            const placeQuery = `[out:json];(node["place"~"town|village|city|hamlet"](${bbox});way["place"~"town|village|city|hamlet"](${bbox});relation["place"~"town|village|city|hamlet"](${bbox}););out center;`;
+            const respPlace = await fetch('https://overpass-api.de/api/interpreter', {
+                method: 'POST',
+                body: `data=${encodeURIComponent(placeQuery)}`
+            });
+            const datosPlace = await respPlace.json();
+
+            let candidato = null;
+            let distanciaMin = Infinity;
+
+            if (datosPlace.elements && datosPlace.elements.length > 0) {
+                datosPlace.elements.forEach(el => {
+                    const latEl = el.center?.lat || el.lat;
+                    const lonEl = el.center?.lon || el.lon;
+                    if (latEl && lonEl) {
+                        const d = calcularDistancia(lat, lng, latEl, lonEl);
+                        if (d < distanciaMin) {
+                            distanciaMin = d;
+                            candidato = { el, lat: latEl, lon: lonEl };
+                        }
+                    }
+                });
+            }
+
+            // Si no hay localidades, buscar la vía/road más cercana (highway)
+            if (!candidato) {
+                const roadQuery = `[out:json];(way["highway"](${bbox});node["highway"](${bbox}););out center;`;
+                const respRoad = await fetch('https://overpass-api.de/api/interpreter', {
+                    method: 'POST',
+                    body: `data=${encodeURIComponent(roadQuery)}`
+                });
+                const datosRoad = await respRoad.json();
+
+                if (datosRoad.elements && datosRoad.elements.length > 0) {
+                    datosRoad.elements.forEach(el => {
+                        const latEl = el.center?.lat || el.lat;
+                        const lonEl = el.center?.lon || el.lon;
+                        if (latEl && lonEl) {
+                            const d = calcularDistancia(lat, lng, latEl, lonEl);
+                            if (d < distanciaMin) {
+                                distanciaMin = d;
+                                candidato = { el, lat: latEl, lon: lonEl, isRoad: true };
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Si encontramos un candidato, construir resultado con distancia
+            if (candidato) {
+                const tags = candidato.el.tags || {};
+                const nombre = tags.name || tags.ref || direccion.city || direccion.town || direccion.village || tags['addr:place'] || (candidato.isRoad ? 'Ruta cercana' : 'Localidad cercana');
+                return { nombre, distancia: distanciaMin, referencia: { lat: candidato.lat, lon: candidato.lon }, tipo: candidato.isRoad ? 'ruta' : 'localidad' };
+            }
+
+            // Fallback: usar provincia/país o las coordenadas como texto
+            const provincia = direccion.province || direccion.state || direccion.region || '';
+            const pais = direccion.country || '';
+            if (provincia || pais) {
+                return { nombre: `${provincia}${provincia && pais ? ', ' : ''}${pais}`, distancia: 0, referencia: null, tipo: 'regional' };
+            }
+
+            return { nombre: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, distancia: 0, referencia: null, tipo: 'coordenadas' };
+
+        } catch (error) {
+            console.error('Error al obtener localidad:', error);
+            return { nombre: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, distancia: 0, referencia: null, tipo: 'error' };
+        }
+    }
+
+    // Función para inicializar event listener de geolocalización
+    function inicializarBotonUbicacion() {
+        const btnUbicacion = document.getElementById('btn-ubicacion');
+        if (!btnUbicacion) return;
+
+        btnUbicacion.addEventListener('click', function() {
+            if (navigator.geolocation) {
+                this.disabled = true;
+                this.textContent = 'Obteniendo ubicación...';
+
+                navigator.geolocation.getCurrentPosition(
+                    async function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+
+                        // Centrar mapa en la ubicación del dispositivo
+                        if (mapa) {
+                            mapa.setView([lat, lng], 13);
+                        }
+
+                        // Eliminar marcador anterior si existe
+                        if (marcador) {
+                            mapa.removeLayer(marcador);
+                        }
+
+                        // Agregar marcador en la ubicación del GPS
+                        marcador = L.marker([lat, lng]).addTo(mapa)
+                            .bindPopup(`<strong>Tu ubicación actual</strong><br>${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+                            .openPopup();
+
+                        // Obtener localidad o vía cercana
+                        const resultado = await obtenerLocalidadCercana(lat, lng);
+
+                        // Actualizar campo de entrada con la localidad propuesta y distancia
+                        document.getElementById('ubicacion').value = construirTextoUbicacion(resultado);
+
+                        // Mostrar información de ubicación
+                        mostrarInfoUbicacion(resultado);
+
+                        document.getElementById('btn-ubicacion').disabled = false;
+                        document.getElementById('btn-ubicacion').textContent = 'Usar mi ubicación actual';
+                    },
+                    function(error) {
+                        alert('No se pudo acceder a tu ubicación. Por favor, verifica los permisos del navegador.');
+                        document.getElementById('btn-ubicacion').disabled = false;
+                        document.getElementById('btn-ubicacion').textContent = 'Usar mi ubicación actual';
+                    }
+                );
+            } else {
+                alert('Tu navegador no soporta geolocalización.');
+            }
+        });
+    }
+
+    // Inicializar mapa y botón cuando el documento esté listo
+    document.addEventListener('DOMContentLoaded', function() {
+        inicializarMapa();
+        inicializarBotonUbicacion();
+    });
+</script>
+
+<script>
+    // Funcionalidad de Zoom
+    const ZOOM_STEP = 0.1;
+    const MIN_ZOOM = 0.8;
+    const MAX_ZOOM = 2;
+
+    function initZoom() {
+        let currentZoom = parseFloat(localStorage.getItem('pageZoom')) || 1;
+        applyZoom(currentZoom);
+    }
+
+    function applyZoom(zoomLevel) {
+        zoomLevel = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomLevel));
+        document.body.style.zoom = zoomLevel;
+        localStorage.setItem('pageZoom', zoomLevel);
+    }
+
+    function zoomIn() {
+        let currentZoom = parseFloat(document.body.style.zoom) || 1;
+        applyZoom(currentZoom + ZOOM_STEP);
+    }
+
+    function zoomOut() {
+        let currentZoom = parseFloat(document.body.style.zoom) || 1;
+        applyZoom(currentZoom - ZOOM_STEP);
+    }
+
+    document.querySelectorAll('.btn-zoom-plus').forEach(btn => {
+        btn.addEventListener('click', zoomIn);
+    });
+
+    document.querySelectorAll('.btn-zoom-minus').forEach(btn => {
+        btn.addEventListener('click', zoomOut);
+    });
+
+    window.addEventListener('load', initZoom);
+    initZoom();
+</script>
+</body>
+</html>

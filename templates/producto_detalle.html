@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ producto.nombre }} - Detalle</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header class="navbar-custom">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center py-3">
+            <div class="d-flex align-items-center">
+                <a href="{{ url_for('reproductores') }}" class="text-decoration-none d-flex align-items-center">
+                    <i class="fas fa-arrow-left text-dark me-2"></i>
+                    <h1 class="h4 mb-0">Detalle del animal</h1>
+                </a>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-link btn-icon btn-zoom-minus" title="Achicar">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button class="btn btn-link btn-icon btn-zoom-plus" title="Agrandar">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">Inicio</a>
+        </div>
+    </div>
+</header>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <div class="row g-4 align-items-start producto-detalle-layout">
+                        {% if producto.foto %}
+                            <div class="col-lg-5">
+                                <div class="detalle-image-wrapper">
+                                    {% if 'uploads/' in producto.foto %}
+                                        <img src="{{ url_for('static', filename=producto.foto) }}" class="img-fluid producto-detalle-figure" alt="{{ producto.nombre }}">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='uploads/' + producto.foto) }}" class="img-fluid producto-detalle-figure" alt="{{ producto.nombre }}">
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-lg-7">
+                        {% else %}
+                            <div class="col-12">
+                        {% endif %}
+                                <h2 class="mb-3">{{ producto.nombre }}</h2>
+                                <p class="text-muted mb-4">Publicado por <strong>{{ producto.usuario.username }}</strong>{% if producto.usuario.ubicacion %} desde <strong>{{ producto.usuario.ubicacion }}</strong>{% endif %}</p>
+
+                                <div class="row g-4 mb-4">
+                                    <div class="col-md-6">
+                                        <p class="mb-2"><strong>Precio:</strong> ${{ "%.2f"|format(producto.precio) }}</p>
+                                        <p class="mb-2"><strong>Edad:</strong> {{ producto.edad }}</p>
+                                        <p class="mb-2"><strong>Peso:</strong> {{ producto.peso }}</p>
+                                        <p class="mb-2"><strong>Tamaño:</strong> {{ producto.tamano }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-2"><strong>Raza:</strong> {{ producto.raza }}</p>
+                                        <p class="mb-2"><strong>Color:</strong> {{ producto.color }}</p>
+                                        <p class="mb-2"><strong>Servicios:</strong> {{ producto.numero_servicios if producto.numero_servicios is not none else 'No disponible' }}</p>
+                                        <p class="mb-2"><strong>Caravana/ID:</strong> {{ producto.numero_carabana or 'No disponible' }}</p>
+                                        <p class="mb-2"><strong>Señal:</strong> {{ producto.senal or 'No disponible' }}</p>
+                                    </div>
+                                </div>
+
+                                <h5 class="mb-3">Descripción</h5>
+                                <p class="text-muted">{{ producto.descripcion or 'No hay descripción disponible.' }}</p>
+
+                                <div class="d-flex gap-2 mt-4 flex-wrap">
+                                    <a href="{{ url_for('reproductores') }}" class="btn btn-secondary">Volver</a>
+                                    <a href="{{ url_for('perfil') }}" class="btn btn-primary">Ver perfil del publicador</a>
+                                    {% if current_user.is_authenticated and current_user.id == producto.usuario_id %}
+                                        <a href="{{ url_for('editar_producto', producto_id=producto.id) }}" class="btn btn-warning">Editar publicación</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="container">
+        <div class="footer-nav">
+            <a href="{{ url_for('index') }}" class="footer-nav-item">
+                <i class="fas fa-home"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="{{ url_for('ferias') }}" class="footer-nav-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Ferias</span>
+            </a>
+            <a href="{{ url_for('reproductores') }}" class="footer-nav-item">
+                <i class="fas fa-tractor"></i>
+                <span>Reproductores</span>
+            </a>
+            <a href="{{ url_for('perfil') }}" class="footer-nav-item">
+                <i class="fas fa-user"></i>
+                <span>Perfil</span>
+            </a>
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const ZOOM_STEP = 0.1;
+    const MIN_ZOOM = 0.8;
+    const MAX_ZOOM = 2;
+
+    function initZoom() {
+        let currentZoom = parseFloat(localStorage.getItem('pageZoom')) || 1;
+        applyZoom(currentZoom);
+    }
+
+    function applyZoom(zoomLevel) {
+        zoomLevel = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomLevel));
+        document.body.style.zoom = zoomLevel;
+        localStorage.setItem('pageZoom', zoomLevel);
+    }
+
+    function zoomIn() {
+        let currentZoom = parseFloat(document.body.style.zoom) || 1;
+        applyZoom(currentZoom + ZOOM_STEP);
+    }
+
+    function zoomOut() {
+        let currentZoom = parseFloat(document.body.style.zoom) || 1;
+        applyZoom(currentZoom - ZOOM_STEP);
+    }
+
+    document.querySelectorAll('.btn-zoom-plus').forEach(btn => btn.addEventListener('click', zoomIn));
+    document.querySelectorAll('.btn-zoom-minus').forEach(btn => btn.addEventListener('click', zoomOut));
+
+    window.addEventListener('load', initZoom);
+    initZoom();
+</script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yamitas - Plataforma de Camélidos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<header class="navbar-custom">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center py-3">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-camel text-primary" style="font-size: 24px; margin-right: 10px;"></i>
+                <h1 class="h4 mb-0">Yamitas.com</h1>
+            </div>
+            <div class="d-flex gap-3 align-items-center">
+                <button class="btn btn-link btn-icon" id="btn-zoom-minus" title="Achicar">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button class="btn btn-link btn-icon" id="btn-zoom-plus" title="Agrandar">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <button class="btn btn-link btn-icon">
+                    <i class="fas fa-bell"></i>
+                </button>
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('perfil') }}" class="btn btn-link btn-icon" title="Perfil">
+                        <i class="fas fa-user"></i>
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-link btn-icon">
+                        <i class="fas fa-user"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</header>
+
+{% if current_user.is_authenticated %}
+<section class="bg-white py-4 border-bottom">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="h4 mb-1">Bienvenido, {{ current_user.username }}.</h2>
+                <p class="mb-0 text-muted">Tu cuenta se creó el {{ current_user.fecha_registro.strftime('%d/%m/%Y') }}.</p>
+            </div>
+            <a href="{{ url_for('perfil') }}" class="btn btn-primary">Ver perfil</a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- ==================== ACCESOS RÁPIDOS ==================== -->
+<section class="accesos-section py-5">
+    <div class="container">
+        <h3 class="mb-5 text-center">Accesos rápidos</h3>
+        <div class="row g-4">
+            <!-- Próximas Ferias -->
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ url_for('ferias') }}" class="acceso-card text-decoration-none">
+                    <picture>
+                        <source srcset="{{ url_for('static', filename='icons/calendario.png') }}" type="image/png">
+                        <img src="{{ url_for('static', filename='icons/calendar.svg') }}" alt="Próximas Ferias" class="acceso-icon">
+                    </picture>
+                    <p class="acceso-title">Próximas Ferias<br>y Eventos</p>
+                </a>
+            </div>
+
+            <!-- Reproductores -->
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ url_for('reproductores') }}" class="acceso-card text-decoration-none">
+                    <img src="{{ url_for('static', filename='icons/compra.png') }}" alt="Reproductores en Venta" class="acceso-icon">
+                    <p class="acceso-title">Reproductores<br>en Venta</p>
+                </a>
+            </div>
+
+            <!-- Ganadores -->
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ url_for('ganadores') }}" class="acceso-card text-decoration-none">
+                    <img src="{{ url_for('static', filename='icons/ferias.png') }}" alt="Ganadores y Resultados" class="acceso-icon">
+                    <p class="acceso-title">Ganadores y<br>Resultados</p>
+                </a>
+            </div>
+
+            <!-- Productores -->
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ url_for('productores') }}" class="acceso-card text-decoration-none">
+                    <img src="{{ url_for('static', filename='icons/productores.png') }}" alt="Productores Registrados" class="acceso-icon">
+                    <p class="acceso-title">Productores<br>Registrados</p>
+                </a>
+            </div>
+
+            <!-- Asistente IA -->
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ url_for('asistente_ia') }}" class="acceso-card text-decoration-none disabled-link" aria-disabled="true" tabindex="-1">
+                    <p class="acceso-title">Asistente IA<br>Camélidos</p>
+                </a>
+            </div>
+
+            <!-- Consejos -->
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ url_for('consejos') }}" class="acceso-card text-decoration-none disabled-link" aria-disabled="true" tabindex="-1">
+                    <p class="acceso-title">Consejos y<br>Buenas Prácticas</p>
+                </a>
+            </div>
+            <!-- Single provisorio badge (positioned absolutely, does not alter layout) -->
+            <img src="{{ url_for('static', filename='icons/cartel_provisorio.png') }}" alt="Provisorio" class="single-provisorio">
+        </div>
+    </div>
+</section>
+
+
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-nav">
+            <a href="{{ url_for('index') }}" class="footer-nav-item active">
+                <i class="fas fa-home"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="{{ url_for('ferias') }}" class="footer-nav-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Ferias</span>
+            </a>
+            <a href="{{ url_for('publicar') }}" class="footer-nav-item">
+                <i class="fas fa-plus-circle"></i>
+                <span>Publicar</span>
+            </a>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('perfil') }}" class="footer-nav-item">
+                    <i class="fas fa-user"></i>
+                    <span>Perfil</span>
+                </a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="footer-nav-item">
+                    <i class="fas fa-user"></i>
+                    <span>Perfil</span>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Funcionalidad de Zoom
+    const ZOOM_STEP = 0.1;
+    const MIN_ZOOM = 0.8;
+    const MAX_ZOOM = 2;
+
+    function initZoom() {
+        // Obtener zoom guardado o usar 1 por defecto
+        let currentZoom = parseFloat(localStorage.getItem('pageZoom')) || 1;
+        applyZoom(currentZoom);
+    }
+
+    function applyZoom(zoomLevel) {
+        // Asegurar que el zoom esté dentro de los límites
+        zoomLevel = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomLevel));
+        document.body.style.zoom = zoomLevel;
+        localStorage.setItem('pageZoom', zoomLevel);
+    }
+
+    function zoomIn() {
+        let currentZoom = parseFloat(document.body.style.zoom) || 1;
+        applyZoom(currentZoom + ZOOM_STEP);
+    }
+
+    function zoomOut() {
+        let currentZoom = parseFloat(document.body.style.zoom) || 1;
+        applyZoom(currentZoom - ZOOM_STEP);
+    }
+
+    // Event listeners
+    document.getElementById('btn-zoom-plus').addEventListener('click', zoomIn);
+    document.getElementById('btn-zoom-minus').addEventListener('click', zoomOut);
+
+    // Inicializar zoom al cargar
+    window.addEventListener('load', initZoom);
+    initZoom();
+</script>
+<script>
+// Escala el cartel provisorio para que tape ambos accesos rápidos (manteniendo proporción)
+function enlargeProvisorioToCover() {
+    const row = document.querySelector('.accesos-section .row');
+    const badge = document.querySelector('.single-provisorio');
+    if (!row || !badge) return;
+
+    const disabled = Array.from(row.querySelectorAll('a.disabled-link'));
+    if (disabled.length < 2) return;
+
+    const rect1 = disabled[0].getBoundingClientRect();
+    const rect2 = disabled[1].getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+
+    // Desired width to cover both cards (add small padding)
+    const padding = 12;
+    const coverWidth = (rect2.right - rect1.left) + padding * 2;
+
+    // Center X of the span between the two cards relative to row
+    const centerX = (rect1.left + rect2.right) / 2 - rowRect.left;
+    const extraOffset = 160; // moved further right per request
+
+    // Set badge width and center it between the two cards (then shift right)
+    badge.style.width = Math.round(coverWidth) + 'px';
+    badge.style.left = Math.round(centerX - coverWidth / 2 + extraOffset) + 'px';
+
+    // Vertically align top of badge with the top of the cards
+    const topOffset = rect1.top - rowRect.top;
+    badge.style.top = Math.round(topOffset) + 'px';
+
+    // Ensure image is loaded before measuring dimensions
+    function finalizeAdjust() {
+        const badgeRect = badge.getBoundingClientRect();
+        const cardHeight = Math.max(disabled[0].offsetHeight, disabled[1].offsetHeight);
+
+        // If badge height is greater than cards, scale down width proportionally
+        if (badgeRect.height > cardHeight) {
+            const scale = cardHeight / badgeRect.height;
+            const oldWidth = parseFloat(badge.style.width);
+            const newWidth = Math.max(1, Math.round(oldWidth * scale));
+            // Center the reduced badge between the two cards, preserving extraOffset
+            badge.style.width = newWidth + 'px';
+            badge.style.left = Math.round(centerX - newWidth / 2 + extraOffset) + 'px';
+        }
+    }
+
+    if (badge.complete && badge.naturalWidth) {
+        finalizeAdjust();
+    } else {
+        badge.addEventListener('load', finalizeAdjust, { once: true });
+        // fallback if load event doesn't fire
+        setTimeout(finalizeAdjust, 200);
+    }
+}
+
+window.addEventListener('load', enlargeProvisorioToCover);
+window.addEventListener('resize', enlargeProvisorioToCover);
+</script>
+</body>
+</html>
