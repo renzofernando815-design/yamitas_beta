@@ -3,5 +3,5 @@
   command = "python build_static.py"
 
 [context.production.environment]
-  PYTHON_VERSION = "3.9"
+  PYTHON_VERSION = "3.11"
   PIP_REQUIREMENTS = "requirements.txt"
