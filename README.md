@@ -67,7 +67,7 @@ Netlify está diseñado principalmente para sitios estáticos y funciones sin se
 3. Despliega el contenido de la carpeta `public/` en Netlify.
 
 > Ten en cuenta que esta versión estática no conserva el inicio de sesión ni el almacenamiento SQLite ni las funciones de publicación/edición.
-> Esta configuración está preparada para Python 3.11 en Netlify.
+> Esta configuración está preparada para Python 3.11.4 en Netlify.
 ## Notas
 - El archivo `app.py` ahora usa variables de entorno para `SECRET_KEY`, `DATABASE_URL` y configuración de cookies, lo que facilita el despliegue en servicios Python.
 - El archivo `build_static.py` genera una versión estática de las páginas principales para Netlify.
