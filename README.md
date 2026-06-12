@@ -49,12 +49,26 @@ Aplicación Flask para publicar animales, noticias de ferias y gestionar usuario
    ```
 
 ## Sobre Netlify
-Netlify está diseñado principalmente para sitios estáticos y funciones sin servidor. Esta aplicación es una app Flask con backend Python y SQLite, por lo que no se puede desplegar directamente como un sitio estático de Netlify.
+Netlify está diseñado principalmente para sitios estáticos y funciones sin servidor. Esta aplicación es una app Flask con backend Python y SQLite, por lo que no se puede desplegar directamente como un sitio completo en Netlify.
 
 ### Opciones recomendadas
 - Desplegar la app Flask completa en un servicio Python como Render, Railway, PythonAnywhere o Heroku.
-- Si deseas usar Netlify, separa el frontend estático y usa un backend Flask independiente en otro servicio.
+- Si deseas usar Netlify, genera una versión estática del frontend con `python build_static.py` y mantén el backend Flask en otro servicio.
+
+## Despliegue en Netlify (estático)
+1. Instala dependencias localmente o en el servidor de compilación:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Genera el sitio estático:
+   ```bash
+   python build_static.py
+   ```
+3. Despliega el contenido de la carpeta `public/` en Netlify.
+
+> Ten en cuenta que esta versión estática no conserva el inicio de sesión ni el almacenamiento SQLite ni las funciones de publicación/edición.
 
 ## Notas
-- El archivo `app.py` crea la base de datos local y aplica migraciones simples al iniciar.
+- El archivo `app.py` ahora usa variables de entorno para `SECRET_KEY`, `DATABASE_URL` y configuración de cookies, lo que facilita el despliegue en servicios Python.
+- El archivo `build_static.py` genera una versión estática de las páginas principales para Netlify.
 - Asegúrate de no subir datos personales ni archivos subidos de usuarios al repositorio.

@@ -18,6 +18,7 @@ instance/
 *.db
 *.sqlite3
 static/uploads/
+public/
 
 # Environment variables
 .env
