@@ -1,0 +1,29 @@
+{
+  "name": "Yamitas",
+  "short_name": "Yamitas",
+  "description": "Plataforma de camélidos para publicar animales, ferias y conectar productores.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f8f9fa",
+  "theme_color": "#8B6F47",
+  "icons": [
+    {
+      "src": "icons/app-icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons/app-icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "icons/app-icon-maskable.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}
