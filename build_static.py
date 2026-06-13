@@ -80,7 +80,12 @@ def main():
         {'template': 'login.html', 'output': os.path.join('login', 'index.html'), 'context': {}},
         {'template': 'perfil.html', 'output': os.path.join('perfil', 'index.html'), 'context': {}},
         {'template': 'publicar.html', 'output': os.path.join('publicar', 'index.html'), 'context': {'nombre': '', 'precio': '', 'descripcion': '', 'edad': '', 'peso': '', 'tamano': '', 'raza': '', 'color': '', 'numero_servicios': '', 'numero_carabana': '', 'senal': ''}},
-        {'template': 'ferias.html', 'output': os.path.join('ferias', 'index.html'), 'context': {'eventos': []}},
+        {'template': 'ferias.html', 'output': os.path.join('ferias', 'index.html'), 'context': {
+            'eventos': [],
+            'eventos_json': [],
+            'authenticated': False,
+            'min_date': datetime.now().date().isoformat()
+        }},
         {'template': 'productos.html', 'output': os.path.join('reproductores', 'index.html'), 'context': {'productos': [], 'titulo': 'Reproductores en Venta'}},
         {'template': 'productos.html', 'output': os.path.join('ganadores', 'index.html'), 'context': {'productos': [], 'titulo': 'Ganadores y Resultados'}},
         {'template': 'productores.html', 'output': os.path.join('productores', 'index.html'), 'context': {'productores': []}},

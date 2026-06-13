@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poner animal a la venta - Yamitas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#8B6F47">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/app-icon-192.png') }}">
+</head>
+<body class="bg-light">
+<header class="navbar-custom">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center py-3">
+            <div class="d-flex align-items-center">
+                <a href="{{ url_for('registro_animales') }}" class="text-decoration-none d-flex align-items-center">
+                    <i class="fas fa-arrow-left text-dark me-2"></i>
+                    <h1 class="h4 mb-0">Poner a la venta</h1>
+                </a>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-link btn-icon btn-zoom-minus" title="Achicar">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button class="btn btn-link btn-icon btn-zoom-plus" title="Agrandar">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <a href="{{ url_for('perfil') }}" class="btn btn-outline-primary btn-sm">Perfil</a>
+        </div>
+    </div>
+</header>
+
+<div class="container py-5">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h3 class="card-title mb-4">Vender {{ animal.nombre }}</h3>
+                    <div class="mb-4">
+                        {% if animal.foto %}
+                            <img src="{{ url_for('static', filename=animal.foto) }}" class="img-fluid rounded mb-3" alt="{{ animal.nombre }}">
+                        {% endif %}
+                        <p class="mb-1"><strong>Edad:</strong> {{ animal.edad }} años</p>
+                        <p class="mb-1"><strong>Peso:</strong> {{ animal.peso }} kg</p>
+                        <p class="mb-1"><strong>Tamaño:</strong> {{ animal.tamano }} m</p>
+                        <p class="mb-1"><strong>Color:</strong> {{ animal.color }}</p>
+                        <p class="mb-1"><strong>Carabana:</strong> {{ animal.numero_carabana or 'No especificado' }}</p>
+                        <p class="mb-1"><strong>Seña:</strong> {{ animal.senal or 'No especificada' }}</p>
+                        <p class="mb-1"><strong>Raza:</strong> {{ animal.raza }}</p>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('vender_animal', animal_id=animal.id) }}">
+                        <div class="mb-3">
+                            <label class="form-label">Precio de venta (ARS) <span class="text-danger">*</span></label>
+                            <input type="number" min="10000" max="999999" step="1" name="precio" class="form-control" value="{{ precio or '' }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descripción para la publicación</label>
+                            <textarea name="descripcion" class="form-control" rows="4" placeholder="Describe el animal para la venta...">{{ descripcion or animal.descripcion or '' }}</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-check me-1"></i>Poner a la venta
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include "_footer.html" %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const ZOOM_STEP = 0.1;
+    const MIN_ZOOM = 0.8;
+    const MAX_ZOOM = 2;
+
+    function initZoom() {
+        let currentZoom = parseFloat(localStorage.getItem('pageZoom')) || 1;
+        applyZoom(currentZoom);
+    }
+
+    function applyZoom(zoomLevel) {
+        zoomLevel = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomLevel));
+        document.body.style.zoom = zoomLevel;
+        localStorage.setItem('pageZoom', zoomLevel);
+    }
+
+    function zoomIn() {
+        let currentZoom = parseFloat(document.body.style.zoom) || 1;
+        applyZoom(currentZoom + ZOOM_STEP);
+    }
+
+    function zoomOut() {
+        let currentZoom = parseFloat(document.body.style.zoom) || 1;
+        applyZoom(currentZoom - ZOOM_STEP);
+    }
+
+    document.querySelectorAll('.btn-zoom-plus').forEach(btn => {
+        btn.addEventListener('click', zoomIn);
+    });
+
+    document.querySelectorAll('.btn-zoom-minus').forEach(btn => {
+        btn.addEventListener('click', zoomOut);
+    });
+
+    window.addEventListener('load', initZoom);
+    initZoom();
+</script>
+<script src="{{ url_for('static', filename='js/pwa.js') }}"></script>
+</body>
+</html>

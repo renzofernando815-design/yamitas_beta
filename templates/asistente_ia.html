@@ -105,56 +105,7 @@
     </div>
 </div>
 
-<footer class="footer">
-    <div class="container">
-        <div class="footer-nav">
-            <a href="{{ url_for('index') }}" class="footer-nav-item">
-                <i class="fas fa-home"></i>
-                <span>Inicio</span>
-            </a>
-            <a href="{{ url_for('ferias') }}" class="footer-nav-item">
-                <i class="fas fa-calendar-alt"></i>
-                <span>Ferias</span>
-            </a>
-            <a href="{{ url_for('publicar') }}" class="footer-nav-item">
-                <i class="fas fa-plus-circle"></i>
-                <span>Publicar</span>
-            </a>
-            <a href="{{ url_for('perfil') }}" class="footer-nav-item">
-                <i class="fas fa-user"></i>
-                <span>Perfil</span>
-            </a>
-            <button class="footer-nav-item" data-bs-toggle="modal" data-bs-target="#sugerenciasModal" style="border: none; background: none; padding: 0; cursor: pointer;">
-                <i class="fas fa-question-circle"></i>
-                <span>Sugerencias</span>
-            </button>
-        </div>
-    </div>
-</footer>
-
-<!-- Modal Sugerencias -->
-<div class="modal fade" id="sugerenciasModal" tabindex="-1" aria-labelledby="sugerenciasLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="sugerenciasLabel">
-                    <i class="fas fa-question-circle text-primary me-2"></i>Sugerencias
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body">
-                <p>Este proyecto está siendo desarrollado por alumnos de sexto años de escuela provincial agrotécnica N° 8 de la ciudad de Abra Pampa. Aún se encuentra en fase de desarrollo por lo que se agradece mucho su comprensión y los invitamos a dejar tanto su experiencia como sugerencias en el siguiente correo:</p>
-                <div class="alert alert-info" role="alert">
-                    <strong>Correo:</strong> <a href="mailto:renzofernando815@gmail.com">renzofernando815@gmail.com</a>
-                </div>
-                <p class="text-muted mb-0">Gracias por tu apoyo y retroalimentación.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            </div>
-        </div>
-    </div>
-</div>
+{% include "_footer.html" %}
 
 <script>
     document.getElementById('chatForm').addEventListener('submit', function(e) {

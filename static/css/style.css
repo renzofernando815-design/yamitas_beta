@@ -25,6 +25,15 @@ body {
     font-weight: 700;
 }
 
+/* Logo en la cabecera */
+.site-logo {
+    height: 40px;
+    width: auto;
+    margin-right: 10px;
+    border-radius: 4px;
+    object-fit: contain;
+}
+
 .btn-icon {
     width: 40px;
     height: 40px;
@@ -244,6 +253,177 @@ body {
     background-color: white;
 }
 
+.ferias-main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: start;
+}
+
+.calendar-panel,
+.event-panel {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.calendar-header .month-label {
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.calendar-header button {
+    border: none;
+    background: #f4f1ea;
+    color: #4d422d;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.calendar-day,
+.calendar-day.empty {
+    min-height: 80px;
+    background: #f9f7f3;
+    border-radius: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #4c463f;
+    cursor: pointer;
+    border: 1px solid transparent;
+    position: relative;
+}
+
+.calendar-day.empty {
+    background: transparent;
+    cursor: default;
+}
+
+.calendar-day:hover:not(.empty) {
+    background: #f4efe6;
+}
+
+.calendar-day.selected {
+    background: #8b6f47;
+    color: white;
+}
+
+.calendar-day.today {
+    border: 2px solid #8b6f47;
+}
+
+.calendar-day.has-event::after {
+    content: '';
+    position: absolute;
+    bottom: 10px;
+    width: 8px;
+    height: 8px;
+    background: #d18d39;
+    border-radius: 999px;
+}
+
+.event-panel h4,
+.event-panel h5 {
+    margin-bottom: 16px;
+}
+
+.event-item {
+    background: #f9f7f3;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.event-item h5 {
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+
+.event-item p {
+    margin-bottom: 8px;
+    color: #5d5345;
+    font-size: 0.95rem;
+}
+
+.event-location {
+    color: #8b6f47;
+    font-weight: 700;
+}
+
+.event-form-group {
+    margin-bottom: 16px;
+}
+
+.event-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.event-form-group input,
+.event-form-group textarea {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid #d8d3ca;
+    padding: 12px 14px;
+    background: #fbfaf7;
+    color: #3f3a33;
+}
+
+.event-form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.event-form button {
+    background: #8b6f47;
+    border: none;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 12px;
+    width: 100%;
+}
+
+.event-form button:disabled {
+    background: #c1b5a6;
+}
+
+.disabled-form {
+    opacity: 0.65;
+    pointer-events: none;
+}
+
+.auth-notice {
+    background: #fff4e6;
+    border: 1px solid #f1d4b9;
+    color: #8c5b23;
+    padding: 16px;
+    border-radius: 14px;
+    margin-bottom: 16px;
+}
+
+@media (max-width: 992px) {
+    .ferias-main {
+        grid-template-columns: 1fr;
+    }
+}
+
 .feria-content h5 {
     color: #333;
     margin-bottom: 12px;
@@ -290,6 +470,8 @@ body {
 .footer-nav-item:hover,
 .footer-nav-item.active {
     color: #8B6F47;
+    font-weight: 700;
+    text-shadow: 0 1px 1px rgba(139, 111, 71, 0.25);
 }
 
 .footer-nav-item i {
