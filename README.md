@@ -1,74 +1,28 @@
-# Yamitas
+Instrucciones sencillitas:
+   Una vez abre el repositorio que contiene todo el codigo se va a   <>code
+   y le da a 'dowloand zip'
 
-Aplicación Flask para publicar animales, noticias de ferias y gestionar usuarios.
+una vez que tenga descargado el zip, lo descomprime en alguna carpeta
+con eso ya tendria el proyecto en su compu
 
-## Contenido del repositorio
-- `app.py`: aplicación principal Flask
-- `requirements.txt`: dependencias de Python
-- `templates/`: vistas HTML
-- `static/`: CSS, JS, imágenes y archivos subidos
-- `fix_paths.py`: script de limpieza de rutas de imágenes en la base de datos
+si quiere abrirlo y solo ver EL CODIGO, vaya a https://vscode.dev/?vscode-lang=es-419 para no tener que descargar nada
+si quiere abrirlo y EJECUTAR el sitio web debera descargar visual studio code
 
-## Configuración local
-1. Crear un entorno virtual:
-   ```bash
-   python -m venv venv
-   ```
-2. Activar el entorno:
-   - Windows PowerShell:
-     ```powershell
-     .\venv\Scripts\Activate.ps1
-     ```
-   - Windows CMD:
-     ```cmd
-     .\venv\Scripts\activate
-     ```
-3. Instalar dependencias:
-   ```bash
+
+si solo quiere ver el codigo
+   una vez en vsc o la pagina le da a 'abrir carpeta' y selecciona la del proyecto
+
+si quiere ejecutarlo:
+   descarga visual studio code y creo que le pide crearse una cuenta (creo)
+   selecciona la carpeta del proyecto
+   una vez abierta la carpeta del proyecto debe abrir una nueva terminal (apartado superior izquierdo)
+   lo primero que debe escribir es  ```bash
    pip install -r requirements.txt
    ```
-4. Ejecutar la app:
-   ```bash
-   python app.py
-   ```
-5. Abrir `http://127.0.0.1:5000` en el navegador.
 
-## GitHub
-1. Inicializar el repositorio local:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   ```
-2. Crear un repositorio nuevo en GitHub.
-3. Conectar el repositorio remoto y enviar los cambios:
-   ```bash
-   git remote add origin https://github.com/<usuario>/<repositorio>.git
-   git branch -M main
-   git push -u origin main
-   ```
+   debe escribir 'python app.py', esto dara inicio al proyecto
+   abre chrome o su navegador web 
 
-## Sobre Netlify
-Netlify está diseñado principalmente para sitios estáticos y funciones sin servidor. Esta aplicación es una app Flask con backend Python y SQLite, por lo que no se puede desplegar directamente como un sitio completo en Netlify.
-
-### Opciones recomendadas
-- Desplegar la app Flask completa en un servicio Python como Render, Railway, PythonAnywhere o Heroku.
-- Si deseas usar Netlify, genera una versión estática del frontend con `python build_static.py` y mantén el backend Flask en otro servicio.
-
-## Despliegue en Netlify (estático)
-1. Instala dependencias localmente o en el servidor de compilación:
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. Genera el sitio estático:
-   ```bash
-   python build_static.py
-   ```
-3. Despliega el contenido de la carpeta `public/` en Netlify.
-
-> Ten en cuenta que esta versión estática no conserva el inicio de sesión ni el almacenamiento SQLite ni las funciones de publicación/edición.
-> Esta configuración está preparada para Python 3.11.4 en Netlify.
-## Notas
-- El archivo `app.py` ahora usa variables de entorno para `SECRET_KEY`, `DATABASE_URL` y configuración de cookies, lo que facilita el despliegue en servicios Python.
-- El archivo `build_static.py` genera una versión estática de las páginas principales para Netlify.
-- Asegúrate de no subir datos personales ni archivos subidos de usuarios al repositorio.
+el proyecto cuenta con un par de anotaciones para que se pueda guiar un poco de que es cada seccion del codigo pero en resumen
+app.py es la base
+en la carpeta 'templates' estan los htmls de cada pagina que se muestra en la app
