@@ -1,0 +1,16 @@
+.git
+.gitignore
+.python-version
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+node_modules/
+npm-debug.log
+yarn-error.log
+public/
+excel datos/
