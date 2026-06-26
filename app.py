@@ -215,14 +215,44 @@ def debug_static_check():
     static_path = app.static_folder
     bootstrap_css = os.path.join(static_path, 'css', 'bootstrap.min.css')
     style_css = os.path.join(static_path, 'css', 'style.css')
+    
+    # Check if files exist and their sizes
+    bootstrap_size = 0
+    style_size = 0
+    
+    if os.path.exists(bootstrap_css):
+        bootstrap_size = os.path.getsize(bootstrap_css)
+    
+    if os.path.exists(style_css):
+        style_size = os.path.getsize(style_css)
+    
     return {
+        'app_root': app.root_path,
         'static_folder': static_path,
+        'static_folder_exists': os.path.exists(static_path) if static_path else False,
         'bootstrap_exists': os.path.exists(bootstrap_css),
         'bootstrap_path': bootstrap_css,
+        'bootstrap_size': bootstrap_size,
         'style_exists': os.path.exists(style_css),
         'style_path': style_css,
+        'style_size': style_size,
         'css_files': os.listdir(os.path.join(static_path, 'css')) if os.path.exists(os.path.join(static_path, 'css')) else [],
+        'vercel_env': bool(os.environ.get('VERCEL')),
+        'working_dir': os.getcwd(),
     }
+
+@app.route('/debug/test-css')
+def debug_test_css():
+    """Test serving CSS directly through Flask"""
+    import os
+    static_path = app.static_folder
+    bootstrap_css = os.path.join(static_path, 'css', 'bootstrap.min.css')
+    
+    if os.path.exists(bootstrap_css):
+        from flask import send_file
+        return send_file(bootstrap_css, mimetype='text/css')
+    
+    return {'error': 'bootstrap.min.css not found'}, 404
 
 @app.route('/')
 def index():
