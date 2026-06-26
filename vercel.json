@@ -9,7 +9,10 @@
   "routes": [
     {
       "src": "/static/(.*)",
-      "dest": "/static/$1"
+      "dest": "/static/$1",
+      "headers": {
+        "Cache-Control": "public, immutable, max-age=31536000"
+      }
     },
     {
       "src": "/favicon.ico",
