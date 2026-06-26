@@ -1,7 +1,4 @@
 {
   "name": "yamitas",
-  "private": true,
-  "scripts": {
-    "build": "python build_vercel.py"
-  }
+  "private": true
 }

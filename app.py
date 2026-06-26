@@ -20,18 +20,34 @@ from urllib.parse import urljoin, urlparse
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import timedelta
 import re
-from pathlib import Path
 import markdown
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'tu_clave_secreta_aqui')
 
+
+def is_vercel_deployment():
+    return (
+        os.environ.get('VERCEL', '').lower() in ('1', 'true', 'yes') or
+        os.environ.get('VERCEL_ENV', '').lower() in ('production', 'preview', 'development') or
+        bool(os.environ.get('VERCEL_URL'))
+    )
+
+VERCEL_DEPLOY = is_vercel_deployment()
+
 database_url = os.environ.get('DATABASE_URL')
 if not database_url:
-    if os.environ.get('VERCEL') == '1':
+    if VERCEL_DEPLOY:
         database_url = 'sqlite:////tmp/yamitas.db'
     else:
-        database_url = 'sqlite:///yamitas.db'
+        default_db_path = os.path.join(app.root_path, 'yamitas.db')
+        try:
+            if os.access(app.root_path, os.W_OK):
+                database_url = 'sqlite:///yamitas.db'
+            else:
+                raise PermissionError
+        except Exception:
+            database_url = 'sqlite:////tmp/yamitas.db'
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -39,8 +55,8 @@ app.config['REMEMBER_COOKIE_DURATION'] = int(os.environ.get('REMEMBER_COOKIE_DUR
 app.config['REMEMBER_COOKIE_SECURE'] = os.environ.get('REMEMBER_COOKIE_SECURE', 'False').lower() in ('1', 'true', 'yes')
 app.config['REMEMBER_COOKIE_HTTPONLY'] = True
 default_upload_folder = os.path.join(app.root_path, 'static', 'uploads')
-if os.environ.get('VERCEL') == '1':
-    default_upload_folder = os.path.join('/tmp', 'uploads')
+if VERCEL_DEPLOY:
+    default_upload_folder = '/tmp/uploads'
 
 app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', default_upload_folder)
 app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))  # 16 MB
@@ -569,7 +585,7 @@ def update_all_sources():
 
 
 # create and start scheduler only when running as a long-lived server
-if os.environ.get('VERCEL') != '1':
+if not VERCEL_DEPLOY:
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=update_all_sources, trigger='interval', minutes=15, next_run_time=datetime.now())
     scheduler.start()
@@ -1565,18 +1581,42 @@ def sync_global_sources_from_json():
     except Exception:
         pass
 
-if __name__ == '__main__':
+def initialize_app():
     with app.app_context():
-        db.create_all()
-        ensure_producto_columns()
-        seed_default_consejos()
-        load_markdown_subconejos()
-        sync_global_sources_from_json()
-        # Force an initial fetch of news items from the configured global source
         try:
-            update_all_sources()
+            db.create_all()
         except Exception:
             pass
+
+        try:
+            ensure_producto_columns()
+        except Exception:
+            pass
+
+        try:
+            seed_default_consejos()
+        except Exception:
+            pass
+
+        try:
+            load_markdown_subconejos()
+        except Exception:
+            pass
+
+        try:
+            sync_global_sources_from_json()
+        except Exception:
+            pass
+
+        if not VERCEL_DEPLOY:
+            try:
+                update_all_sources()
+            except Exception:
+                pass
+
+initialize_app()
+
+if __name__ == '__main__':
     app.run(
         host='0.0.0.0',
         port=int(os.environ.get('PORT', 5000)),
