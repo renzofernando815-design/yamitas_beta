@@ -254,6 +254,47 @@ def debug_test_css():
     
     return {'error': 'bootstrap.min.css not found'}, 404
 
+# Catch-all route to serve static files explicitly in Vercel
+@app.route('/static/<path:filepath>', methods=['GET'])
+def serve_static(filepath):
+    """Serve static files explicitly for Vercel compatibility"""
+    import os
+    from flask import send_file, abort
+    
+    static_path = app.static_folder
+    full_path = os.path.join(static_path, filepath)
+    
+    # Security: prevent directory traversal
+    if not os.path.abspath(full_path).startswith(os.path.abspath(static_path)):
+        abort(404)
+    
+    # Check if file exists
+    if not os.path.isfile(full_path):
+        abort(404)
+    
+    # Determine MIME type
+    import mimetypes
+    mime_type, _ = mimetypes.guess_type(full_path)
+    if not mime_type:
+        if full_path.endswith('.css'):
+            mime_type = 'text/css'
+        elif full_path.endswith('.js'):
+            mime_type = 'application/javascript'
+        elif full_path.endswith('.json'):
+            mime_type = 'application/json'
+        elif full_path.endswith('.woff2'):
+            mime_type = 'font/woff2'
+        elif full_path.endswith('.woff'):
+            mime_type = 'font/woff'
+        elif full_path.endswith('.ttf'):
+            mime_type = 'font/ttf'
+        else:
+            mime_type = 'application/octet-stream'
+    
+    response = send_file(full_path, mimetype=mime_type)
+    response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+    return response
+
 @app.route('/')
 def index():
     news_items = []
