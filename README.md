@@ -1,38 +1,29 @@
-# Yamitas
+Instrucciones sencillitas:
+   Una vez abre el repositorio que contiene todo el codigo se va a   <>code
+   y le da a 'dowloand zip'
 
-Aplicación Flask para publicar animales, noticias de ferias y gestionar usuarios.
+una vez que tenga descargado el zip, lo descomprime en alguna carpeta
+con eso ya tendria el proyecto en su compu
 
-## Contenido del repositorio
-- `app.py`: aplicación principal Flask
-- `requirements.txt`: dependencias de Python
-- `templates/`: vistas HTML
-- `static/`: CSS, JS, imágenes y archivos subidos
-- `fix_paths.py`: script de limpieza de rutas de imágenes en la base de datos
+-si quiere abrirlo y solo ver EL CODIGO
+   vaya a https://vscode.dev/?vscode-lang=es-419 para no tener que descargar nada
+   una vez en la pagina le da a 'abrir carpeta' y selecciona la del proyecto
 
-## Configuración local
-1. Crear un entorno virtual:
-   ```bash
-   python -m venv venv
-   ```
-2. Activar el entorno:
-   - Windows PowerShell:
-     ```powershell
-     .\venv\Scripts\Activate.ps1
-     ```
-   - Windows CMD:
-     ```cmd
-     .\venv\Scripts\activate
-     ```
-3. Instalar dependencias:
+-si quiere ejecutarlo:
+  1) descarga visual studio code y creo que le pide crearse una cuenta (creo)
+   2) selecciona la carpeta del proyecto
+   3) una vez abierta la carpeta del proyecto debe abrir una nueva terminal (apartado superior izquierdo)
+   4) lo primero que debe escribir es  (esto instalara los requerimientos)
    ```bash
    pip install -r requirements.txt
    ```
-4. Ejecutar la app:
+   5) da inicio al proyecto con
    ```bash
    python app.py
    ```
-5. Abrir `http://127.0.0.1:5000` en el navegador.
+   6) abre chrome o su navegador web y copia `http://127.0.0.1:5000` en la URL
 
+<<<<<<< HEAD
 ## Versión de Python
 - El proyecto fue probado localmente con Python 3.14.5.
 - Si usas un host Python, ajusta `runtime.txt` o la configuración del servicio según la versión admitida.
@@ -139,3 +130,11 @@ Esta configuración genera un sitio estático en `public/` usando `build_static.
 - El archivo `build_static.py` genera una versión estática de las páginas principales para Vercel/Netlify y ya incluye valores predeterminados para `current_user` y `ollama_status`.
 - Se agregó el endpoint `/productores/<int:user_id>` (`productor_venta`) para permitir la navegación entre productores y sus productos.
 - Asegúrate de no subir datos personales ni archivos subidos de usuarios al repositorio.
+=======
+el proyecto cuenta con un par de anotaciones para que se pueda guiar un poco de que es cada seccion del codigo pero en resumen
+app.py es la base
+en la carpeta 'templates' estan los htmls de cada pagina que se muestra en la app
+eso creo que es todo, si me olvido algo pido disculpas
+
+No me robe el codigo profe -_-
+>>>>>>> e7c98887bbb8118841be6c5fc0f2b57467273d44
