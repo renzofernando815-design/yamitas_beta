@@ -137,4 +137,4 @@ en la carpeta 'templates' estan los htmls de cada pagina que se muestra en la ap
 eso creo que es todo, si me olvido algo pido disculpas
 
 No me robe el codigo profe -_-
->>>>>>> e7c98887bbb8118841be6c5fc0f2b57467273d44
+
