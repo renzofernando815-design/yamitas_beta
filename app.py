@@ -1545,6 +1545,7 @@ def load_markdown_subconejos():
         'venta': 'Venta',
         'salud': 'Sanidad',
         'alimentacion': 'Alimentación',
+        'reproduccion': 'Reproducción',
     }
     
     for folder_name, categoria_nombre in mapeo_categorias.items():
@@ -1554,7 +1555,12 @@ def load_markdown_subconejos():
         
         consejo = Consejo.query.filter_by(categoria=categoria_nombre).first()
         if not consejo:
-            continue
+            consejo = Consejo(
+                contenido=f'Consejos de {categoria_nombre}.',
+                categoria=categoria_nombre,
+            )
+            db.session.add(consejo)
+            db.session.commit()
         
         existing_subs = SubConsejoMarkdown.query.filter_by(consejo_id=consejo.id).count()
         if existing_subs > 0:
@@ -1582,7 +1588,7 @@ def load_markdown_subconejos():
             imagen = None
             img_files = [f for f in os.listdir(subfolder_path) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
             if img_files:
-                imagen = f'consejos/{folder_name}/{subfolder}/{img_files[0]}'
+                imagen = f'uploads/consejos/{folder_name}/{subfolder}/{img_files[0]}'
             
             contenido_limpio = re.sub(r'^\*"[^"]*\.(jpg|jpeg|png|gif)"\*\s*$', '', contenido_md, flags=re.MULTILINE | re.IGNORECASE)
             contenido_limpio = re.sub(r'^\*"?[A-Z]:\\[^"]*\.(jpg|jpeg|png|gif)"?\*?\s*$', '', contenido_limpio, flags=re.MULTILINE | re.IGNORECASE)
