@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 from urllib.parse import urlparse
 from app import app, User, db
-from flask import render_template
+from flask import render_template, url_for
 from sqlalchemy.orm import joinedload
 
 
@@ -19,7 +19,22 @@ def render_page(template_name, output_path, context):
     output_file = os.path.join(PUBLIC_DIR, output_path)
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
+    static_dir = os.path.join(PUBLIC_DIR, 'static')
+    relative_static_prefix = os.path.relpath(static_dir, os.path.dirname(output_file)).replace('\\', '/')
+    if not relative_static_prefix.endswith('/'):
+        relative_static_prefix += '/'
+
+    original_url_for = app.jinja_env.globals.get('url_for', url_for)
+
+    def static_relative_url_for(endpoint, **values):
+        if endpoint == 'static':
+            filename = values.get('filename', '')
+            return f"{relative_static_prefix}{filename}".replace('\\', '/')
+        return original_url_for(endpoint, **values)
+
     with app.test_request_context('/'):
+        app.jinja_env.globals['url_for'] = static_relative_url_for
+
         # When exporting static pages (for Vercel/Netlify), avoid showing
         # runtime warnings about Ollama not being available. Provide a
         # neutral `ollama_status` that prevents the template from showing
@@ -40,6 +55,8 @@ def render_page(template_name, output_path, context):
             **context,
         }
         html = render_template(template_name, **page_context)
+
+    app.jinja_env.globals['url_for'] = original_url_for
 
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html)
