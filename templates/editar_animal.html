@@ -89,6 +89,22 @@
                                 <input type="number" min="0" step="0.1" name="tamano" class="form-control" value="{{ animal.tamano }}" required>
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label">Raza <span class="text-danger">*</span></label>
+                                <select name="raza" class="form-control" required>
+                                    <option value="">-- Seleccionar raza --</option>
+                                    <option value="Tampulli" {% if animal.raza == 'Tampulli' %}selected{% endif %}>Tampulli</option>
+                                    <option value="Kara" {% if animal.raza == 'Kara' %}selected{% endif %}>Kara</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Género <span class="text-danger">*</span></label>
+                                <select name="genero" class="form-control" required>
+                                    <option value="">-- Seleccionar género --</option>
+                                    <option value="Macho" {% if animal.genero == 'Macho' %}selected{% endif %}>Macho</option>
+                                    <option value="Hembra" {% if animal.genero == 'Hembra' %}selected{% endif %}>Hembra</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label">Color <span class="text-danger">*</span></label>
                                 <input type="text" name="color" class="form-control" value="{{ animal.color }}" required>
                             </div>
@@ -118,7 +134,7 @@
                                     {% if animal.foto %}
                                         <div class="mb-3">
                                             <p class="text-muted mb-2"><small>Foto actual:</small></p>
-                                            <img src="{{ url_for('static', filename=animal.foto) }}" class="preview-image" alt="{{ animal.nombre }}">
+                                            <img src="{{ url_for('static', filename=animal.foto) }}?v={{ animal.id }}-{{ animal.fecha_modificacion.strftime('%Y%m%d%H%M%S') }}" class="preview-image" alt="{{ animal.nombre }}">
                                         </div>
                                     {% endif %}
                                     

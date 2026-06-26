@@ -41,32 +41,45 @@
 <div class="container py-5">
     <div class="row">
         <div class="col-md-8 mx-auto">
-            <!-- Artículo 1 -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <h5 class="card-title fw-bold mb-3">Cuidados Esenciales para Camélidos</h5>
-                    <p class="card-text text-muted">Los camélidos requieren atención especial en su alimentación, especialmente durante las estaciones de cambio climático. Proporcionarles alimento de calidad es fundamental para su desarrollo.</p>
-                    <a href="#" class="btn btn-sm btn-outline-primary">Leer más</a>
+            {% set query = query | default('') %}
+            {% set consejos = consejos | default([]) %}
+            {% set subconejos = subconejos | default([]) %}
+            <form class="mb-4" action="{{ url_for('consejos') }}" method="get">
+                <div class="input-group">
+                    <input type="search" class="form-control" name="q" placeholder="Buscar consejos y buenas prácticas" value="{{ query }}">
+                    <button class="btn btn-primary" type="submit"><i class="fas fa-search me-2"></i>Buscar</button>
                 </div>
-            </div>
+            </form>
 
-            <!-- Artículo 2 -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <h5 class="card-title fw-bold mb-3">Reproducción Selectiva en Camélidos</h5>
-                    <p class="card-text text-muted">La reproducción selectiva es clave para mejorar la genética de tus animales. Conoce los criterios técnicos para seleccionar los mejores reproductores.</p>
-                    <a href="#" class="btn btn-sm btn-outline-primary">Leer más</a>
-                </div>
-            </div>
+            {% if query %}
+            <div class="alert alert-info">Resultados para: <strong>{{ query }}</strong></div>
+            {% endif %}
 
-            <!-- Artículo 3 -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <h5 class="card-title fw-bold mb-3">Sanidad e Higiene en Establos</h5>
-                    <p class="card-text text-muted">Mantener una buena higiene en los establos previene enfermedades. Descubre los protocolos recomendados para garantizar la salud de tu rebaño.</p>
-                    <a href="#" class="btn btn-sm btn-outline-primary">Leer más</a>
+            {% if consejos %}
+                {% for consejo in consejos %}
+                    <a href="{{ url_for('consejo_detalle', consejo_id=consejo.id) }}" class="card shadow-sm mb-4 text-decoration-none text-dark">
+                        <div class="card-body p-4">
+                            <h5 class="card-title fw-bold mb-0">{{ consejo.categoria or 'Consejo' }}</h5>
+                        </div>
+                    </a>
+                {% endfor %}
+            {% elif subconejos %}
+                {% for sub in subconejos %}
+                    <a href="{{ url_for('subconsejos_detalle', consejo_id=sub.consejo_id, sub_id=sub.id) }}" class="card shadow-sm mb-4 text-decoration-none text-dark">
+                        <div class="card-body p-4">
+                            <h5 class="card-title fw-bold mb-2">{{ sub.titulo }}</h5>
+                            <p class="text-muted small mb-0"><i class="fas fa-tag me-1"></i>{{ sub.consejo.categoria }}</p>
+                        </div>
+                    </a>
+                {% endfor %}
+            {% else %}
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title fw-bold mb-3">No se encontraron consejos</h5>
+                        <p class="card-text text-muted">Intenta con otra palabra clave como "alimentación", "salud", "venta" o "crianza".</p>
+                    </div>
                 </div>
-            </div>
+            {% endif %}
         </div>
     </div>
 </div>

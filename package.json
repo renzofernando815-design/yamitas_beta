@@ -1,0 +1,7 @@
+{
+  "name": "yamitas",
+  "private": true,
+  "scripts": {
+    "build": "python build_static.py"
+  }
+}

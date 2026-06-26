@@ -78,6 +78,21 @@
 <div class="container py-5">
     <div class="row">
         <div class="col-md-8 mx-auto">
+            {% set ollama_available = ollama_status.ollama_available %}
+            {% set model_installed = ollama_status.model_installed %}
+            {% if not ollama_available %}
+            <div class="alert alert-warning" role="alert">
+                Ollama no está instalado o no se encuentra su ejecutable en este sistema. La interfaz del asistente está disponible, pero las consultas no podrán procesarse hasta que Ollama esté instalado correctamente.
+            </div>
+            {% elif not model_installed %}
+            <div class="alert alert-warning" role="alert">
+                El modelo <strong>{{ ollama_status.requested_model }}</strong> no está instalado en Ollama. Instálalo con <code>ollama pull {{ ollama_status.requested_model }}</code> o actualiza <code>OLLAMA_MODEL</code>.
+            </div>
+            {% else %}
+            <div class="alert alert-info" role="alert">
+                Ollama está disponible en <strong>{{ ollama_status.ollama_command }}</strong> y usará el modelo <strong>{{ ollama_status.resolved_model }}</strong>.
+            </div>
+            {% endif %}
             <div class="chat-container" id="chatContainer">
                 <div class="chat-message bot">
                     <div class="message-text">
@@ -87,8 +102,8 @@
             </div>
 
             <form id="chatForm" class="d-flex gap-2">
-                <input type="text" class="form-control" id="messageInput" placeholder="Haz una pregunta sobre camélidos..." required>
-                <button type="submit" class="btn btn-dark">
+                <input type="text" class="form-control" id="messageInput" placeholder="Haz una pregunta sobre camélidos..." required {% if not ollama_available or not model_installed %}disabled{% endif %}>
+                <button type="submit" class="btn btn-dark" {% if not ollama_available or not model_installed %}disabled{% endif %}>
                     <i class="fas fa-send"></i>
                 </button>
             </form>
@@ -96,9 +111,9 @@
             <div class="mt-4">
                 <h6 class="text-muted mb-3">Preguntas sugeridas:</h6>
                 <div class="d-flex flex-wrap gap-2">
-                    <button class="btn btn-outline-secondary btn-sm" onclick="askQuestion('¿Cuál es la mejor alimentación para alpacas?')">Alimentación de alpacas</button>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="askQuestion('¿A qué edad puedo empezar la reproducción?')">Edad de reproducción</button>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="askQuestion('¿Cómo prevenir enfermedades en camélidos?')">Prevención de enfermedades</button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="askQuestion('¿Cuál es la mejor alimentación para alpacas?')" {% if not ollama_available or not model_installed %}disabled{% endif %}>Alimentación de alpacas</button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="askQuestion('¿A qué edad puedo empezar la reproducción?')" {% if not ollama_available or not model_installed %}disabled{% endif %}>Edad de reproducción</button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="askQuestion('¿Cómo prevenir enfermedades en camélidos?')" {% if not ollama_available or not model_installed %}disabled{% endif %}>Prevención de enfermedades</button>
                 </div>
             </div>
         </div>
@@ -108,7 +123,7 @@
 {% include "_footer.html" %}
 
 <script>
-    document.getElementById('chatForm').addEventListener('submit', function(e) {
+    document.getElementById('chatForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const messageInput = document.getElementById('messageInput');
         const message = messageInput.value;
@@ -116,27 +131,51 @@
         if (message.trim()) {
             addMessage(message, 'user');
             messageInput.value = '';
+            addMessage('Escribiendo...', 'bot', true);
 
-            // Simulación de respuesta del asistente
-            setTimeout(() => {
-                const responses = [
-                    'Excelente pregunta. Te recomiendo consultar con especialistas en crianza de camélidos.',
-                    'Esa es una pregunta muy importante para la crianza. La respuesta depende de varias variables.',
-                    'Muy buena observación. Este es un tema clave en la ganadería de camélidos.'
-                ];
-                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-                addMessage(randomResponse, 'bot');
-            }, 500);
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+                removeTypingMessage();
+
+                if (!response.ok) {
+                    addMessage(data.error || 'Error en el servidor.', 'bot');
+                    return;
+                }
+
+                addMessage(data.response, 'bot');
+            } catch (error) {
+                removeTypingMessage();
+                addMessage('No se pudo conectar con el servidor. Revisa Ollama o tu conexión.', 'bot');
+            }
         }
     });
 
-    function addMessage(text, sender) {
+    function addMessage(text, sender, isTyping = false) {
         const chatContainer = document.getElementById('chatContainer');
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${sender}`;
+        if (isTyping) {
+            messageDiv.setAttribute('data-typing', 'true');
+        }
         messageDiv.innerHTML = `<div class="message-text">${text}</div>`;
         chatContainer.appendChild(messageDiv);
         chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function removeTypingMessage() {
+        const chatContainer = document.getElementById('chatContainer');
+        const typingMessage = chatContainer.querySelector('[data-typing="true"]');
+        if (typingMessage) {
+            typingMessage.remove();
+        }
     }
 
     function askQuestion(question) {

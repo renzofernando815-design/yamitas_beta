@@ -1,8 +1,10 @@
+
 import os
 import shutil
 from datetime import datetime
-from app import app
+from app import app, User, db
 from flask import render_template
+from sqlalchemy.orm import joinedload
 
 
 class DummyObject:
@@ -16,8 +18,22 @@ def render_page(template_name, output_path, context):
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
     with app.test_request_context('/'):
+        # When exporting static pages (for Vercel/Netlify), avoid showing
+        # runtime warnings about Ollama not being available. Provide a
+        # neutral `ollama_status` that prevents the template from showing
+        # error banners in the static build.
+        default_ollama_status = {
+            'ollama_command': '',
+            'ollama_available': True,
+            'installed_models': [],
+            'requested_model': getattr(app, 'OLLAMA_MODEL', 'mistral'),
+            'resolved_model': getattr(app, 'OLLAMA_MODEL', 'mistral'),
+            'model_installed': True,
+        }
+
         page_context = {
             'current_user': app.jinja_env.globals.get('current_user'),
+            'ollama_status': default_ollama_status,
             **context,
         }
         html = render_template(template_name, **page_context)
@@ -38,6 +54,14 @@ def create_public_directory():
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 PUBLIC_DIR = os.path.join(ROOT_DIR, 'public')
+
+
+def get_productores():
+    try:
+        with app.app_context():
+            return User.query.options(joinedload(User.productos)).all()
+    except Exception:
+        return []
 
 
 def main():
@@ -88,7 +112,7 @@ def main():
         }},
         {'template': 'productos.html', 'output': os.path.join('reproductores', 'index.html'), 'context': {'productos': [], 'titulo': 'Reproductores en Venta'}},
         {'template': 'productos.html', 'output': os.path.join('ganadores', 'index.html'), 'context': {'productos': [], 'titulo': 'Ganadores y Resultados'}},
-        {'template': 'productores.html', 'output': os.path.join('productores', 'index.html'), 'context': {'productores': []}},
+        {'template': 'productores.html', 'output': os.path.join('productores', 'index.html'), 'context': {'productores': get_productores()}},
         {'template': 'consejos.html', 'output': os.path.join('consejos', 'index.html'), 'context': {}},
         {'template': 'asistente_ia.html', 'output': os.path.join('asistente-ia', 'index.html'), 'context': {}},
         {'template': 'producto_detalle.html', 'output': os.path.join('producto', '1', 'index.html'), 'context': {'producto': dummy_producto}},

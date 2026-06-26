@@ -3,14 +3,25 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, text, or_
 import os
 import time
 import base64
 import io
 import csv
+import subprocess
 from datetime import datetime
 from PIL import Image
+import requests
+from bs4 import BeautifulSoup
+import json
+import feedparser
+from urllib.parse import urljoin, urlparse
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import timedelta
+import re
+from pathlib import Path
+import markdown
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'tu_clave_secreta_aqui')
@@ -65,7 +76,7 @@ class Producto(db.Model):
     descripcion = db.Column(db.Text)
     precio = db.Column(db.Float, nullable=False)
     tipo = db.Column(db.String(50), nullable=False)  # reproductor, ganador, animal, etc
-    foto = db.Column(db.String(255), nullable=True)
+    foto = db.Column(db.String(255), nullable=True) 
     edad = db.Column(db.String(50), nullable=False)
     peso = db.Column(db.String(50), nullable=False)
     tamano = db.Column(db.String(50), nullable=False)
@@ -93,6 +104,7 @@ class Animal(db.Model):
     peso = db.Column(db.String(50), nullable=False)
     tamano = db.Column(db.String(50), nullable=False)
     raza = db.Column(db.String(100), nullable=False)
+    genero = db.Column(db.String(50), nullable=True)
     color = db.Column(db.String(100), nullable=False)
     numero_servicios = db.Column(db.Integer, nullable=True)
     numero_carabana = db.Column(db.String(100), nullable=True)
@@ -103,6 +115,52 @@ class Animal(db.Model):
     usuario = db.relationship('User', backref=db.backref('animales', lazy=True))
     fecha_creacion = db.Column(db.DateTime, default=db.func.current_timestamp())
     fecha_modificacion = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+
+
+class NewsSource(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    url = db.Column(db.String(2048), nullable=False)
+    fecha_creacion = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    usuario = db.relationship('User', backref=db.backref('news_sources', lazy=True))
+
+
+class GlobalNewsSource(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    url = db.Column(db.String(2048), nullable=False)
+    fecha_creacion = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+
+class NewsItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    url = db.Column(db.String(2048), unique=True, nullable=False)
+    title = db.Column(db.String(1024), nullable=False)
+    summary = db.Column(db.Text, nullable=True)
+    published_at = db.Column(db.DateTime, nullable=True)
+    fetched_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    source_id = db.Column(db.Integer, db.ForeignKey('news_source.id'), nullable=True)
+    global_source_id = db.Column(db.Integer, db.ForeignKey('global_news_source.id'), nullable=True)
+
+    source = db.relationship('NewsSource', backref=db.backref('items', lazy=True))
+    global_source = db.relationship('GlobalNewsSource', backref=db.backref('items', lazy=True))
+
+class Consejo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    contenido = db.Column(db.Text, nullable=False)
+    categoria = db.Column(db.String(100), nullable=True)
+    fecha_creacion = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+class SubConsejoMarkdown(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    consejo_id = db.Column(db.Integer, db.ForeignKey('consejo.id'), nullable=False)
+    titulo = db.Column(db.String(200), nullable=False)
+    contenido = db.Column(db.Text, nullable=False)
+    imagen = db.Column(db.String(255), nullable=True)
+    orden = db.Column(db.Integer, default=0)
+    fecha_creacion = db.Column(db.DateTime, default=db.func.current_timestamp())
+    
+    consejo = db.relationship('Consejo', backref=db.backref('subconejos', lazy=True))
 
 @app.route('/static/uploads/<path:filename>')
 def serve_upload(filename):
@@ -116,7 +174,82 @@ def load_user(user_id):
 # ==================== RUTAS ====================
 @app.route('/')
 def index():
-    return render_template('index.html')
+    news_items = []
+
+    def fetch_title(url):
+        title = None
+        try:
+            resp = requests.get(url, timeout=5, headers={'User-Agent': 'yamitas-bot/1.0'})
+            if resp.ok:
+                soup = BeautifulSoup(resp.text, 'html.parser')
+                og = soup.find('meta', property='og:title')
+                if og and og.get('content'):
+                    title = og.get('content').strip()
+                if not title:
+                    t = soup.find('title')
+                    if t and t.text:
+                        title = t.text.strip()
+                if not title:
+                    h1 = soup.find('h1')
+                    if h1 and h1.text:
+                        title = h1.text.strip()
+        except Exception:
+            title = None
+        return title or 'Sin título'
+
+    # Show latest cached global news items only (most recent first, alternated by source when multiple URLs are configured)
+    try:
+        global_sources = GlobalNewsSource.query.order_by(GlobalNewsSource.id).all()
+        current_global_ids = [g.id for g in global_sources]
+        if current_global_ids:
+            recent = NewsItem.query.filter(NewsItem.global_source_id.in_(current_global_ids))
+        else:
+            recent = NewsItem.query.filter(NewsItem.global_source_id.isnot(None))
+        recent = recent.order_by(NewsItem.published_at.desc().nullslast(), NewsItem.fetched_at.desc()).limit(50).all()
+
+        if not recent and current_global_ids:
+            update_all_sources()
+            recent = NewsItem.query.filter(NewsItem.global_source_id.in_(current_global_ids))
+            recent = recent.order_by(NewsItem.published_at.desc().nullslast(), NewsItem.fetched_at.desc()).limit(50).all()
+
+        if current_global_ids:
+            # alternate across sources, showing up to 5 items
+            grouped = {g.id: [] for g in global_sources}
+            for it in recent:
+                if it.global_source_id in grouped:
+                    grouped[it.global_source_id].append(it)
+
+            source_ids = list(grouped.keys())
+            idx = 0
+            while len(news_items) < 5 and any(grouped[s] for s in source_ids):
+                source_id = source_ids[idx % len(source_ids)]
+                if grouped[source_id]:
+                    it = grouped[source_id].pop(0)
+                    news_items.append({'id': it.id, 'url': it.url, 'title': it.title, 'is_global': True})
+                idx += 1
+        else:
+            for it in recent[:5]:
+                news_items.append({'id': it.id, 'url': it.url, 'title': it.title, 'is_global': True})
+
+        if not news_items and current_global_ids:
+            # fallback placeholder while the first news fetch completes
+            news_items.append({
+                'id': 'placeholder',
+                'url': global_sources[0].url,
+                'title': 'Cargando noticias de la fuente principal...',
+                'is_global': True,
+                'placeholder': True
+            })
+    except Exception:
+        # fallback to showing configured sources if DB query fails
+        try:
+            global_sources = GlobalNewsSource.query.all()
+            for s in global_sources:
+                news_items.append({'id': f'g-{s.id}', 'url': s.url, 'title': fetch_title(s.url), 'is_global': True})
+        except Exception:
+            pass
+
+    return render_template('index.html', news_items=news_items)
 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
@@ -195,6 +328,229 @@ def editar_ubicacion():
     db.session.commit()
     flash('Ubicación actualizada correctamente.', 'success')
     return redirect(url_for('perfil'))
+
+
+@app.route('/news-sources/add', methods=['POST'])
+@login_required
+def add_news_source():
+    url = request.form.get('news_url', '').strip()
+    if not url:
+        flash('Ingresa la URL de la fuente.', 'warning')
+        return redirect(url_for('index'))
+
+    if not (url.startswith('http://') or url.startswith('https://')):
+        flash('La URL debe comenzar con http:// o https://', 'danger')
+        return redirect(url_for('index'))
+
+    # Limitar cantidad de fuentes por usuario
+    existing_count = NewsSource.query.filter_by(usuario_id=current_user.id).count()
+    if existing_count >= 10:
+        flash('Has alcanzado el límite de 10 fuentes.', 'warning')
+        return redirect(url_for('index'))
+
+    nuevo = NewsSource(usuario_id=current_user.id, url=url)
+    db.session.add(nuevo)
+    db.session.commit()
+    flash('Fuente añadida correctamente.', 'success')
+    return redirect(url_for('index'))
+
+
+@app.route('/news-sources/remove', methods=['POST'])
+@login_required
+def remove_news_source():
+    source_id = request.form.get('source_id')
+    if not source_id:
+        return redirect(url_for('index'))
+
+    source = NewsSource.query.filter_by(id=source_id, usuario_id=current_user.id).first()
+    if source:
+        db.session.delete(source)
+        db.session.commit()
+        flash('Fuente eliminada.', 'info')
+
+    return redirect(url_for('index'))
+
+
+def find_feed_url(page_url):
+    try:
+        resp = requests.get(page_url, timeout=6, headers={'User-Agent': 'yamitas-bot/1.0'})
+        if not resp.ok:
+            return None
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        link = soup.find('link', type='application/rss+xml') or soup.find('link', type='application/atom+xml')
+        if link and link.get('href'):
+            return urljoin(page_url, link.get('href'))
+    except Exception:
+        return None
+    return None
+
+
+def fetch_from_feed(feed_url, global_source=None, user_source=None):
+    try:
+        f = feedparser.parse(feed_url)
+        entries = []
+        for e in f.entries[:10]:
+            link = e.get('link') or e.get('id')
+            title = e.get('title', 'Sin título')
+            summary = e.get('summary', '')
+            published = None
+            if hasattr(e, 'published_parsed') and e.published_parsed:
+                published = datetime.fromtimestamp(time.mktime(e.published_parsed))
+            entries.append({'link': link, 'title': title, 'summary': summary, 'published': published})
+        return entries
+    except Exception:
+        return []
+
+
+def fetch_article_title(article_url):
+    try:
+        r = requests.get(article_url, timeout=6, headers={'User-Agent': 'yamitas-bot/1.0'})
+        if not r.ok:
+            return None
+        s = BeautifulSoup(r.text, 'html.parser')
+        og = s.find('meta', property='og:title')
+        if og and og.get('content'):
+            return og.get('content').strip()
+        t = s.find('title')
+        if t and t.text:
+            return t.text.strip()
+        h1 = s.find('h1')
+        if h1 and h1.text:
+            return h1.text.strip()
+    except Exception:
+        return None
+    return None
+
+
+def fetch_from_html(page_url):
+    # Simple heuristic: collect first distinct article links from same host
+    try:
+        r = requests.get(page_url, timeout=6, headers={'User-Agent': 'yamitas-bot/1.0'})
+        if not r.ok:
+            return []
+        s = BeautifulSoup(r.text, 'html.parser')
+        anchors = s.find_all('a', href=True)
+        parsed = urlparse(page_url)
+        collected = []
+        seen = set()
+        for a in anchors:
+            href = a['href']
+            href = urljoin(page_url, href)
+            p = urlparse(href)
+            if p.netloc != parsed.netloc:
+                continue
+            if href in seen:
+                continue
+            seen.add(href)
+            # skip links to same page or index
+            if href.rstrip('/').lower() == page_url.rstrip('/').lower():
+                continue
+            title = a.get_text(strip=True)
+            if not title or len(title) < 15:
+                # try getting article page title
+                title = fetch_article_title(href) or title
+            collected.append({'link': href, 'title': title or 'Sin título', 'summary': '', 'published': None})
+            if len(collected) >= 10:
+                break
+        return collected
+    except Exception:
+        return []
+
+
+def extract_article_text(article_url):
+    try:
+        r = requests.get(article_url, timeout=8, headers={'User-Agent': 'yamitas-bot/1.0'})
+        if not r.ok:
+            return ''
+        s = BeautifulSoup(r.text, 'html.parser')
+        paragraphs = [p.get_text(separator=' ', strip=True) for p in s.find_all('p') if p.get_text(strip=True)]
+        return ' '.join(paragraphs)
+    except Exception:
+        return ''
+
+
+def is_llama_related(text):
+    if not text:
+        return False
+    text = text.lower()
+    keywords = [
+        r"\bllama\b",
+        r"\ballamas\b",
+        r"\bcam[eé]lidos?\b",
+        r"\bcam[eé]lido\b",
+        r"\balpacas?\b",
+        r"\bvicu[nñ]a\b",
+        r"\bguanacos?\b",
+        r"\bfibra\b",
+        r"\bcr[ií]a\b",
+        r"\breba[nñ]o\b",
+        r"\bficha\b",
+        r"\bchaccu\b"
+    ]
+    return any(re.search(pattern, text) for pattern in keywords)
+
+
+def update_source_articles_for_url(url, global_source=None, user_source=None):
+    # Try feed first
+    entries = []
+    feed_url = find_feed_url(url)
+    if feed_url:
+        entries = fetch_from_feed(feed_url, global_source=global_source, user_source=user_source)
+    if not entries:
+        # try url as feed
+        entries = fetch_from_feed(url, global_source=global_source, user_source=user_source)
+    if not entries:
+        entries = fetch_from_html(url)
+
+    for e in entries:
+        link = e.get('link')
+        if not link:
+            continue
+        # ensure absolute
+        link = urljoin(url, link)
+        # check existing
+        if NewsItem.query.filter_by(url=link).first():
+            continue
+        title = e.get('title') or fetch_article_title(link) or 'Sin título'
+        summary = e.get('summary')
+        combined_text = f"{title}\n{summary or ''}"
+
+        if not is_llama_related(combined_text):
+            # Try full article text if title/summary is not enough
+            page_text = extract_article_text(link)
+            if not is_llama_related(page_text):
+                continue
+
+        published = e.get('published')
+        ni = NewsItem(url=link, title=title[:1024], summary=summary, published_at=published)
+        if global_source:
+            ni.global_source_id = global_source.id
+        if user_source:
+            ni.source_id = user_source.id
+        db.session.add(ni)
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+def update_all_sources():
+    with app.app_context():
+        try:
+            globals = GlobalNewsSource.query.all()
+            for g in globals:
+                update_source_articles_for_url(g.url, global_source=g)
+        except Exception:
+            pass
+
+        # No longer using per-user news sources for the main panel
+        # kept for compatibility, but these items are not shown in the main carousel.
+
+
+# create and start scheduler
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=update_all_sources, trigger='interval', minutes=15, next_run_time=datetime.now())
+scheduler.start()
 
 @app.route('/logout')
 @login_required
@@ -602,7 +958,60 @@ def productores():
 
 @app.route('/consejos')
 def consejos():
-    return render_template('consejos.html')
+    query = request.args.get('q', '').strip()
+    consejos_query = Consejo.query
+    subconejos_query = SubConsejoMarkdown.query
+    
+    if query:
+        pattern = f"%{query}%"
+        
+        # Buscar en categorías
+        consejos_query = consejos_query.filter(
+            or_(
+                Consejo.contenido.ilike(pattern),
+                Consejo.categoria.ilike(pattern)
+            )
+        )
+        
+        # Buscar en artículos
+        subconejos_query = subconejos_query.filter(
+            or_(
+                SubConsejoMarkdown.titulo.ilike(pattern),
+                SubConsejoMarkdown.contenido.ilike(pattern)
+            )
+        )
+    
+    consejos = consejos_query.order_by(Consejo.id.desc()).all()
+    subconejos = subconejos_query.order_by(SubConsejoMarkdown.orden).all()
+    
+    return render_template('consejos.html', consejos=consejos, subconejos=subconejos, query=query)
+
+@app.route('/consejos/<int:consejo_id>')
+def consejo_detalle(consejo_id):
+    consejo = Consejo.query.get_or_404(consejo_id)
+    query = request.args.get('q', '').strip()
+    
+    subconejos_query = SubConsejoMarkdown.query.filter_by(consejo_id=consejo_id)
+    
+    if query:
+        pattern = f"%{query}%"
+        subconejos_query = subconejos_query.filter(
+            or_(
+                SubConsejoMarkdown.titulo.ilike(pattern),
+                SubConsejoMarkdown.contenido.ilike(pattern)
+            )
+        )
+    
+    subconejos = subconejos_query.order_by(SubConsejoMarkdown.orden).all()
+    return render_template('consejos_detalle.html', consejo=consejo, subconejos=subconejos, query=query)
+
+@app.route('/consejos/<int:consejo_id>/subconsejos/<int:sub_id>')
+def subconsejos_detalle(consejo_id, sub_id):
+    consejo = Consejo.query.get_or_404(consejo_id)
+    subconsejos = SubConsejoMarkdown.query.get_or_404(sub_id)
+    if subconsejos.consejo_id != consejo_id:
+        abort(404)
+    return render_template('subconsejos_detalle.html', consejo=consejo, subconsejos=subconsejos)
 
 @app.route('/registro_animales', methods=['GET', 'POST'])
 @login_required
@@ -637,7 +1046,8 @@ def registro_animales():
                             edad=str(edad_val),
                             peso=str(peso_val),
                             tamano=str(tamano_val),
-                            raza='Llama',
+                            raza=row.get('raza', 'Tampulli').strip() or 'Tampulli',
+                            genero=row.get('genero', 'Macho').strip() or 'Macho',
                             color=row.get('color', '').strip(),
                             numero_servicios=int(row.get('numero_servicios', 0)) if row.get('numero_servicios', '').isdigit() else None,
                             numero_carabana=row.get('numero_carabana', '').strip() or None,
@@ -662,13 +1072,15 @@ def registro_animales():
             edad = request.form.get('edad', '').strip()
             peso = request.form.get('peso', '').strip()
             tamano = request.form.get('tamano', '').strip()
+            raza = request.form.get('raza', '').strip()
+            genero = request.form.get('genero', '').strip()
             color = request.form.get('color', '').strip()
             numero_servicios = request.form.get('numero_servicios', '').strip()
             numero_carabana = request.form.get('numero_carabana', '').strip()
             senal = request.form.get('senal', '').strip()
             descripcion = request.form.get('descripcion', '').strip()
             
-            if not nombre or not edad or not peso or not tamano or not color:
+            if not nombre or not edad or not peso or not tamano or not raza or not genero or not color:
                 flash('Completa todos los campos obligatorios.', 'warning')
                 animales = Animal.query.filter_by(usuario_id=current_user.id).all()
                 return render_template('registro_animales.html', animales=animales)
@@ -740,7 +1152,8 @@ def registro_animales():
                 edad=str(edad_val),
                 peso=str(peso_val),
                 tamano=str(tamano_val),
-                raza='Llama',
+                raza=raza,
+                genero=genero,
                 color=color,
                 numero_servicios=servicios_valor,
                 numero_carabana=numero_carabana or None,
@@ -770,13 +1183,15 @@ def editar_animal(animal_id):
         edad = request.form.get('edad', '').strip()
         peso = request.form.get('peso', '').strip()
         tamano = request.form.get('tamano', '').strip()
+        raza = request.form.get('raza', '').strip()
+        genero = request.form.get('genero', '').strip()
         color = request.form.get('color', '').strip()
         numero_servicios = request.form.get('numero_servicios', '').strip()
         numero_carabana = request.form.get('numero_carabana', '').strip()
         senal = request.form.get('senal', '').strip()
         descripcion = request.form.get('descripcion', '').strip()
         
-        if not nombre or not edad or not peso or not tamano or not color:
+        if not nombre or not edad or not peso or not tamano or not raza or not genero or not color:
             flash('Completa todos los campos obligatorios.', 'warning')
             return render_template('editar_animal.html', animal=animal)
         
@@ -836,16 +1251,26 @@ def editar_animal(animal_id):
         animal.edad = str(edad_val)
         animal.peso = str(peso_val)
         animal.tamano = str(tamano_val)
-        animal.raza = 'Llama'
+        animal.raza = raza
+        animal.genero = genero
         animal.color = color
         animal.numero_servicios = int(numero_servicios) if numero_servicios.isdigit() else None
         animal.numero_carabana = numero_carabana or None
         animal.senal = senal or None
         animal.descripcion = descripcion or None
-        
-        db.session.commit()
-        flash('Animal actualizado correctamente.', 'success')
-        return redirect(url_for('registro_animales'))
+        animal.fecha_modificacion = datetime.now()
+
+        # Intentar guardar y capturar errores para diagnóstico
+        try:
+            db.session.commit()
+            flash('Animal actualizado correctamente.', 'success')
+            return redirect(url_for('registro_animales'))
+        except Exception as e:
+            db.session.rollback()
+            # Mostrar datos recibidos y el error para ayudar a depurar
+            flash(f'Error al guardar cambios: {str(e)}', 'danger')
+            flash(f'Datos recibidos - nombre: {nombre}, raza: {raza}, genero: {genero}, foto_subida: {bool(foto)}, foto_base64: {bool(foto_base64)}', 'warning')
+            return render_template('editar_animal.html', animal=animal)
     
     return render_template('editar_animal.html', animal=animal)
 
@@ -923,14 +1348,206 @@ def vender_animal(animal_id):
 
     return render_template('vender_animal.html', animal=animal)
 
+OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'mistral')
+OLLAMA_SYSTEM_PROMPT = (
+    "Eres un asistente experto en camélidos (alpacas, llamas, vicuñas y guanacos). "
+    "Responde en español con consejos prácticos sobre alimentación, salud, reproducción, venta y crianza. "
+    "Habla de forma amable y clara. Si no sabes algo, dilo honestamente y recomienda consultar a un especialista."
+)
+OLLAMA_COMMAND = os.environ.get(
+    'OLLAMA_COMMAND',
+    r'C:\Users\renzo\AppData\Local\Programs\Ollama\ollama.exe' if os.name == 'nt' else 'ollama'
+)
+
+
+def call_ollama(user_prompt):
+    if not user_prompt:
+        return None, 'El mensaje no puede estar vacío.'
+
+    prompt = (
+        f"{OLLAMA_SYSTEM_PROMPT}\n\n"
+        f"Usuario: {user_prompt}\n"
+        f"IA: "
+    )
+
+    result = subprocess.run(
+        [OLLAMA_COMMAND, "run", OLLAMA_MODEL, prompt],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    if result.returncode != 0:
+        error_text = result.stderr.strip() or 'Error al ejecutar Ollama.'
+        return None, error_text
+
+    return result.stdout.strip(), None
+
+
+@app.route('/api/chat', methods=['POST'])
+def api_chat():
+    data = request.get_json(silent=True) or {}
+    message = (data.get('message') or '').strip()
+    if not message:
+        return {'error': 'Mensaje vacío'}, 400
+
+    response_text, error = call_ollama(message)
+    if error:
+        return {'error': error}, 500
+
+    return {'response': response_text}
+
+
 @app.route('/asistente-ia')
 def asistente_ia():
     return render_template('asistente_ia.html')
+
+
+def load_markdown_subconejos():
+    """Carga subconejos desde carpetas de consejos_data basadas en categorías."""
+    consejos_data_path = os.path.join(app.root_path, 'consejos_data')
+    if not os.path.exists(consejos_data_path):
+        return
+    
+    mapeo_categorias = {
+        'crianza': 'Crianza',
+        'venta': 'Venta',
+        'salud': 'Sanidad',
+        'alimentacion': 'Alimentación',
+    }
+    
+    for folder_name, categoria_nombre in mapeo_categorias.items():
+        categoria_path = os.path.join(consejos_data_path, folder_name)
+        if not os.path.exists(categoria_path):
+            continue
+        
+        consejo = Consejo.query.filter_by(categoria=categoria_nombre).first()
+        if not consejo:
+            continue
+        
+        existing_subs = SubConsejoMarkdown.query.filter_by(consejo_id=consejo.id).count()
+        if existing_subs > 0:
+            continue
+        
+        orden = 0
+        for subfolder in sorted(os.listdir(categoria_path)):
+            subfolder_path = os.path.join(categoria_path, subfolder)
+            if not os.path.isdir(subfolder_path):
+                continue
+            
+            md_files = [f for f in os.listdir(subfolder_path) if f.endswith('.md')]
+            if not md_files:
+                continue
+            
+            md_file = md_files[0]
+            md_path = os.path.join(subfolder_path, md_file)
+            
+            with open(md_path, 'r', encoding='utf-8') as f:
+                contenido_md = f.read()
+            
+            titulo_match = re.search(r'^#\s+(.+?)$', contenido_md, re.MULTILINE)
+            titulo = titulo_match.group(1) if titulo_match else subfolder.replace('_', ' ').title()
+            
+            imagen = None
+            img_files = [f for f in os.listdir(subfolder_path) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
+            if img_files:
+                imagen = f'consejos/{folder_name}/{subfolder}/{img_files[0]}'
+            
+            contenido_limpio = re.sub(r'^\*"[^"]*\.(jpg|jpeg|png|gif)"\*\s*$', '', contenido_md, flags=re.MULTILINE | re.IGNORECASE)
+            contenido_limpio = re.sub(r'^\*"?[A-Z]:\\[^"]*\.(jpg|jpeg|png|gif)"?\*?\s*$', '', contenido_limpio, flags=re.MULTILINE | re.IGNORECASE)
+            contenido_limpio = re.sub(r'!\[.*?\]\([^)]*\.(jpg|jpeg|png|gif)\)', '', contenido_limpio, flags=re.IGNORECASE)
+            
+            contenido_html = markdown.markdown(contenido_limpio)
+            
+            sub = SubConsejoMarkdown(
+                consejo_id=consejo.id,
+                titulo=titulo,
+                contenido=contenido_html,
+                imagen=imagen,
+                orden=orden
+            )
+            db.session.add(sub)
+            orden += 1
+        
+        db.session.commit()
+
+def seed_default_consejos():
+    existing = Consejo.query.first()
+    if existing:
+        return
+
+    ejemplos = [
+        {
+            'contenido': 'Ofrece forraje de calidad, heno limpio y agua fresca. Ajusta la dieta según la edad, condición y carga productiva.',
+            'categoria': 'Alimentación',
+        },
+        {
+            'contenido': 'Limpia los corrales diariamente y evita acumulación de estiércol. Mantén una cama seca y ventilación adecuada para reducir enfermedades respiratorias.',
+            'categoria': 'Sanidad',
+        },
+        {
+            'contenido': 'Evalúa la conformación, temperamento, salud y rendimiento genético antes de seleccionar reproductores para mejorar tu rebaño.',
+            'categoria': 'Reproducción',
+        },
+        {
+            'contenido': 'Describe claramente las condiciones del animal, su edad, peso y antecedentes sanitarios para generar confianza en los compradores.',
+            'categoria': 'Venta',
+        },
+        {
+            'contenido': 'Asegura una lactancia completa y un ambiente limpio. Introduce concentrados gradualmente para evitar problemas digestivos.',
+            'categoria': 'Crianza',
+        },
+    ]
+
+    for item in ejemplos:
+        consejo = Consejo(
+            contenido=item['contenido'],
+            categoria=item['categoria'],
+        )
+        db.session.add(consejo)
+    db.session.commit()
+
+
+def sync_global_sources_from_json():
+    json_path = os.path.join(app.root_path, 'news_sources.json')
+    if not os.path.exists(json_path):
+        return
+
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            urls = data.get('urls', []) if isinstance(data, dict) else data
+            urls = [u.strip() for u in urls if isinstance(u, str) and u.strip()]
+
+        existing_sources = {g.url: g for g in GlobalNewsSource.query.all()}
+        for url, source in existing_sources.items():
+            if url not in urls:
+                try:
+                    NewsItem.query.filter_by(global_source_id=source.id).delete(synchronize_session=False)
+                except Exception:
+                    pass
+                db.session.delete(source)
+
+        for url in urls:
+            if url not in existing_sources:
+                db.session.add(GlobalNewsSource(url=url))
+
+        db.session.commit()
+    except Exception:
+        pass
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         ensure_producto_columns()
+        seed_default_consejos()
+        load_markdown_subconejos()
+        sync_global_sources_from_json()
+        # Force an initial fetch of news items from the configured global source
+        try:
+            update_all_sources()
+        except Exception:
+            pass
     app.run(
         host='0.0.0.0',
         port=int(os.environ.get('PORT', 5000)),

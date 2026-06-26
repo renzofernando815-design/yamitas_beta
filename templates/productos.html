@@ -46,9 +46,9 @@
                 <div class="card-img-wrapper">
                     {% if producto.foto %}
                         {% if 'uploads/' in producto.foto %}
-                            <img src="{{ url_for('static', filename=producto.foto) }}" class="card-img-top card-img-half" alt="{{ producto.nombre }}">
+                            <img src="{{ url_for('static', filename=producto.foto) }}?v={{ producto.id }}-{{ producto.fecha_creacion.strftime('%Y%m%d%H%M%S') }}" class="card-img-top card-img-half" alt="{{ producto.nombre }}">
                         {% else %}
-                            <img src="{{ url_for('static', filename='uploads/' + producto.foto) }}" class="card-img-top card-img-half" alt="{{ producto.nombre }}">
+                            <img src="{{ url_for('static', filename='uploads/' + producto.foto) }}?v={{ producto.id }}-{{ producto.fecha_creacion.strftime('%Y%m%d%H%M%S') }}" class="card-img-top card-img-half" alt="{{ producto.nombre }}">
                         {% endif %}
                     {% else %}
                         <img src="https://images.unsplash.com/photo-1537988550596-7fcdc15c341d?w=400" class="card-img-top card-img-half" alt="Producto">

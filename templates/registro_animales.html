@@ -129,6 +129,22 @@
                                         <input type="number" min="0" step="0.1" name="tamano" class="form-control" placeholder="Ej: 1.2" required>
                                     </div>
                                     <div class="col-md-6">
+                                        <label class="form-label">Raza <span class="text-danger">*</span></label>
+                                        <select name="raza" class="form-control" required>
+                                            <option value="">-- Seleccionar raza --</option>
+                                            <option value="Tampulli">Tampulli</option>
+                                            <option value="Kara">Kara</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Género <span class="text-danger">*</span></label>
+                                        <select name="genero" class="form-control" required>
+                                            <option value="">-- Seleccionar género --</option>
+                                            <option value="Macho">Macho</option>
+                                            <option value="Hembra">Hembra</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
                                         <label class="form-label">Color <span class="text-danger">*</span></label>
                                         <input type="text" name="color" class="form-control" placeholder="Ej: Blanco, Marrón" required>
                                     </div>
@@ -192,8 +208,8 @@
                             <div class="alert alert-info" role="alert">
                                 <h5><i class="fas fa-info-circle me-2"></i>Formato requerido para CSV:</h5>
                                 <p class="mb-2">El archivo debe contener las siguientes columnas (en este orden):</p>
-                                <code>nombre,edad,peso,tamano,color,numero_servicios,numero_carabana,senal,descripcion</code>
-                                <p class="mt-2 mb-0"><small><strong>Nota:</strong> Las columnas opcionales pueden estar vacías. Edad, peso y tamaño deben ser números. La raza siempre será Llama.</small></p>
+                                <code>nombre,edad,peso,tamano,color,raza,genero,numero_servicios,numero_carabana,senal,descripcion</code>
+                                <p class="mt-2 mb-0"><small><strong>Nota:</strong> Las columnas opcionales pueden estar vacías. Edad, peso y tamaño deben ser números. Raza puede ser "Tampulli" o "Kara" (por defecto "Tampulli"). Género puede ser "Macho" o "Hembra" (por defecto "Macho").</small></p>
                             </div>
 
                             <div class="alert alert-warning" role="alert">
@@ -229,7 +245,7 @@
                         <div class="col-md-6 col-lg-4">
                             <div class="card animal-card h-100 shadow-sm">
                                 {% if animal.foto %}
-                                    <img src="{{ url_for('static', filename=animal.foto) }}" class="card-img-top" alt="{{ animal.nombre }}" style="height: 200px; object-fit: cover;">
+                                    <img src="{{ url_for('static', filename=animal.foto) }}?v={{ animal.id }}-{{ animal.fecha_modificacion.strftime('%Y%m%d%H%M%S') }}" class="card-img-top" alt="{{ animal.nombre }}" style="height: 200px; object-fit: cover;">
                                 {% else %}
                                     <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px; color: white;">
                                         <i class="fas fa-image fa-3x"></i>
@@ -239,6 +255,7 @@
                                     <h5 class="card-title">{{ animal.nombre }}</h5>
                                     <div class="animal-details small text-muted mb-3">
                                         <p class="mb-1"><strong>Raza:</strong> {{ animal.raza }}</p>
+                                        <p class="mb-1"><strong>Género:</strong> {{ animal.genero }}</p>
                                         <p class="mb-1"><strong>Edad:</strong> {{ animal.edad }} años</p>
                                         <p class="mb-1"><strong>Peso:</strong> {{ animal.peso }} kg</p>
                                         <p class="mb-1"><strong>Tamaño:</strong> {{ animal.tamano }} m</p>
@@ -389,9 +406,9 @@
 
     // Descargar plantilla CSV
     function descargarPlantilla() {
-        const csvContent = "nombre,edad,peso,tamano,color,numero_servicios,numero_carabana,senal,descripcion\n" +
-                          "Llama 001,3,75.5,1.2,Blanco,0,CAR-001,Marca roja,Animal de prueba\n" +
-                          "Alpaca 002,2,65.0,1.1,Marrón,5,CAR-002,Sin marcas,\n";
+        const csvContent = "nombre,edad,peso,tamano,color,raza,genero,numero_servicios,numero_carabana,senal,descripcion\n" +
+                          "Alpaca 001,3,75.5,1.2,Blanco,Tampulli,Macho,0,CAR-001,Marca roja,Animal de prueba\n" +
+                          "Llama 002,2,65.0,1.1,Marrón,Kara,Hembra,5,CAR-002,Sin marcas,\n";
         
         const element = document.createElement('a');
         element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent));
