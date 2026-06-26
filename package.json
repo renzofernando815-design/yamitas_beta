@@ -2,6 +2,6 @@
   "name": "yamitas",
   "private": true,
   "scripts": {
-    "build": "python -m pip install -r requirements.txt && python build_static.py"
+    "build": "python build_vercel.py"
   }
 }
