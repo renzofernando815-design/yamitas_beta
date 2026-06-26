@@ -38,11 +38,24 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['REMEMBER_COOKIE_DURATION'] = int(os.environ.get('REMEMBER_COOKIE_DURATION', 86400 * 30))  # 30 días
 app.config['REMEMBER_COOKIE_SECURE'] = os.environ.get('REMEMBER_COOKIE_SECURE', 'False').lower() in ('1', 'true', 'yes')
 app.config['REMEMBER_COOKIE_HTTPONLY'] = True
-app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', os.path.join(app.root_path, 'static', 'uploads'))
+default_upload_folder = os.path.join(app.root_path, 'static', 'uploads')
+if os.environ.get('VERCEL') == '1':
+    default_upload_folder = os.path.join('/tmp', 'uploads')
+
+app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', default_upload_folder)
 app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))  # 16 MB
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+try:
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+except OSError:
+    # Fallback to a writeable temp directory on serverless platforms
+    fallback_upload_folder = os.path.join('/tmp', 'uploads')
+    try:
+        os.makedirs(fallback_upload_folder, exist_ok=True)
+        app.config['UPLOAD_FOLDER'] = fallback_upload_folder
+    except OSError:
+        pass
 
 @app.before_request
 def serve_uploads():
@@ -555,10 +568,11 @@ def update_all_sources():
         # kept for compatibility, but these items are not shown in the main carousel.
 
 
-# create and start scheduler
-scheduler = BackgroundScheduler()
-scheduler.add_job(func=update_all_sources, trigger='interval', minutes=15, next_run_time=datetime.now())
-scheduler.start()
+# create and start scheduler only when running as a long-lived server
+if os.environ.get('VERCEL') != '1':
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(func=update_all_sources, trigger='interval', minutes=15, next_run_time=datetime.now())
+    scheduler.start()
 
 @app.route('/logout')
 @login_required
