@@ -209,6 +209,21 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # ==================== RUTAS ====================
+@app.route('/debug/static-check')
+def debug_static_check():
+    import os
+    static_path = app.static_folder
+    bootstrap_css = os.path.join(static_path, 'css', 'bootstrap.min.css')
+    style_css = os.path.join(static_path, 'css', 'style.css')
+    return {
+        'static_folder': static_path,
+        'bootstrap_exists': os.path.exists(bootstrap_css),
+        'bootstrap_path': bootstrap_css,
+        'style_exists': os.path.exists(style_css),
+        'style_path': style_css,
+        'css_files': os.listdir(os.path.join(static_path, 'css')) if os.path.exists(os.path.join(static_path, 'css')) else [],
+    }
+
 @app.route('/')
 def index():
     news_items = []
