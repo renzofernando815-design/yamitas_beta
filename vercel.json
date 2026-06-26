@@ -12,14 +12,6 @@
   ],
   "routes": [
     {
-      "src": "/static/(.*)",
-      "methods": ["GET", "HEAD", "OPTIONS"],
-      "dest": "/static/$1",
-      "headers": {
-        "cache-control": "public, s-maxage=31536000, max-age=31536000, immutable"
-      }
-    },
-    {
       "src": "/favicon.ico",
       "dest": "/static/icons/app-icon-192.png"
     },
