@@ -27,6 +27,10 @@
                     <i class="fas fa-user"></i>
                     <span>Perfil</span>
                 </a>
+                <a href="{{ url_for('registro') }}" class="footer-nav-item {% if active_page == 'registro' %}active{% endif %}">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Registro</span>
+                </a>
             {% endif %}
             <button type="button" class="footer-nav-item" data-bs-toggle="modal" data-bs-target="#sugerenciasModal" style="border: none; background: none; padding: 0; cursor: pointer;">
                 <i class="fas fa-question-circle"></i>

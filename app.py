@@ -956,6 +956,13 @@ def productores():
     usuarios = User.query.filter_by(tipo_usuario='vendedor').all()
     return render_template('productores.html', productores=usuarios)
 
+@app.route('/productores/<int:user_id>')
+def productor_venta(user_id):
+    usuario = User.query.get_or_404(user_id)
+    productos = Producto.query.filter_by(usuario_id=usuario.id).all()
+    titulo = f'Productos de {usuario.username}'
+    return render_template('productos.html', productos=productos, titulo=titulo)
+
 @app.route('/consejos')
 def consejos():
     query = request.args.get('q', '').strip()

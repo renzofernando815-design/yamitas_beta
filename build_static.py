@@ -1,7 +1,9 @@
 
 import os
 import shutil
+import json
 from datetime import datetime
+from urllib.parse import urlparse
 from app import app, User, db
 from flask import render_template
 from sqlalchemy.orm import joinedload
@@ -34,6 +36,7 @@ def render_page(template_name, output_path, context):
         page_context = {
             'current_user': app.jinja_env.globals.get('current_user'),
             'ollama_status': default_ollama_status,
+            'news_items': context.get('news_items', []),
             **context,
         }
         html = render_template(template_name, **page_context)
@@ -62,6 +65,30 @@ def get_productores():
             return User.query.options(joinedload(User.productos)).all()
     except Exception:
         return []
+
+
+def get_static_news_items():
+    news_items = []
+    json_path = os.path.join(ROOT_DIR, 'news_sources.json')
+
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            urls = data.get('urls', []) if isinstance(data, dict) else data
+            urls = [u.strip() for u in urls if isinstance(u, str) and u.strip()]
+
+        for index, url in enumerate(urls[:5]):
+            news_items.append({
+                'id': f'placeholder-{index}',
+                'url': url,
+                'title': f'Cargando noticias de {urlparse(url).hostname or url}...',
+                'is_global': True,
+                'placeholder': True,
+            })
+    except Exception:
+        pass
+
+    return news_items
 
 
 def main():
@@ -99,7 +126,7 @@ def main():
     )
 
     pages = [
-        {'template': 'index.html', 'output': 'index.html', 'context': {}},
+        {'template': 'index.html', 'output': 'index.html', 'context': {'news_items': get_static_news_items()}},
         {'template': 'registro.html', 'output': os.path.join('registro', 'index.html'), 'context': {}},
         {'template': 'login.html', 'output': os.path.join('login', 'index.html'), 'context': {}},
         {'template': 'perfil.html', 'output': os.path.join('perfil', 'index.html'), 'context': {}},
