@@ -1574,7 +1574,7 @@ def load_markdown_subconejos():
             if not md_files:
                 return
 
-            relative_path = os.path.relpath(source_path, consejos_data_path).replace('\', '/')
+            relative_path = os.path.relpath(source_path, consejos_data_path).replace('\\', '/')
             for md_file in sorted(md_files):
                 md_path = os.path.join(source_path, md_file)
                 with open(md_path, 'r', encoding='utf-8') as f:
