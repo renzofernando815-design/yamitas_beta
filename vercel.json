@@ -1,29 +1,22 @@
 {
   "version": 2,
-  "env": {
-    "PYTHONPATH": "/var/task"
-  },
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb",
+        "runtime": "python3.12"
+      }
     }
   ],
   "routes": [
     {
       "src": "/static/(.*)",
-      "methods": ["GET", "HEAD"],
+      "methods": ["GET", "HEAD", "OPTIONS"],
       "dest": "/static/$1",
       "headers": {
-        "cache-control": "public, s-maxage=31536000, immutable"
-      }
-    },
-    {
-      "src": "/public/(.*)",
-      "methods": ["GET", "HEAD"],
-      "dest": "/public/$1",
-      "headers": {
-        "cache-control": "public, s-maxage=31536000, immutable"
+        "cache-control": "public, s-maxage=31536000, max-age=31536000, immutable"
       }
     },
     {
